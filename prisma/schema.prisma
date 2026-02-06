@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents   Document[]
+  annotations Annotation[]
+}
+
+model Document {
+  id           String   @id @default(uuid())
+  userId       String
+  title        String
+  fileName     String
+  fileUrl      String
+  fileSize     Int
+  pageCount    Int
+  uploadedAt   DateTime @default(now())
+  lastOpenedAt DateTime @default(now())
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  annotations Annotation[]
+  aiContext   AIContext?
+
+  @@index([userId])
+}
+
+model Annotation {
+  id           String   @id @default(uuid())
+  documentId   String
+  userId       String
+  type         String // 'highlight', 'note', 'ai_explanation'
+  pageNumber   Int
+  color        String?
+  position     Json // {x, y, width, height}
+  selectedText String?
+  content      String? // for notes/AI explanations
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([userId])
+}
+
+model AIContext {
+  id            String   @id @default(uuid())
+  documentId    String   @unique
+  extractedText String   @db.Text
+  chunkMetadata Json?
+  createdAt     DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
