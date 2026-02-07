@@ -8,7 +8,9 @@ import "@/lib/pdf-worker";
 import { Loader2 } from "lucide-react";
 import { usePDFStore } from "@/stores/pdf-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
+import { useAIStore } from "@/stores/ai-store";
 import { useTextSelection } from "@/hooks/use-text-selection";
+import { useAIExplain } from "@/hooks/use-ai-explain";
 import { HighlightLayer } from "./HighlightLayer";
 import { SelectionPopup } from "./SelectionPopup";
 import {
@@ -33,6 +35,8 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
     selectAnnotation,
     reset: resetAnnotations,
   } = useAnnotationStore();
+  const isAIMode = useAIStore((s) => s.isAIMode);
+  const { explain } = useAIExplain();
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -60,6 +64,15 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selection, isHighlightMode]);
+
+  // AI mode: explain selected text
+  useEffect(() => {
+    if (isAIMode && !isHighlightMode && selection && documentId) {
+      explain(documentId, selection.selectedText, selection.pageNumber);
+      clearSelection();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection, isAIMode, isHighlightMode]);
 
   // Deselect annotation when clicking on empty space
   const handleContainerClick = useCallback(() => {
@@ -124,7 +137,7 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
   return (
     <div
       ref={containerRef}
-      className={`flex flex-1 items-start justify-center overflow-auto bg-muted/30 p-4${isHighlightMode ? " cursor-text" : ""}`}
+      className={`flex flex-1 items-start justify-center overflow-auto bg-muted/30 p-4${isHighlightMode || isAIMode ? " cursor-text" : ""}`}
       onClick={handleContainerClick}
     >
       <Document

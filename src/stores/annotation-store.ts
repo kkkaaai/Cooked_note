@@ -2,6 +2,13 @@ import { create } from "zustand";
 import type { Annotation, HighlightColor } from "@/types";
 import { HIGHLIGHT_COLORS } from "@/types";
 
+// Callback to notify when highlight mode is activated (used by ai-store to deactivate AI mode)
+let onHighlightModeActivated: (() => void) | null = null;
+
+export function setOnHighlightModeActivated(callback: (() => void) | null) {
+  onHighlightModeActivated = callback;
+}
+
 interface AnnotationState {
   annotations: Annotation[];
   selectedAnnotationId: string | null;
@@ -59,7 +66,13 @@ export const useAnnotationStore = create<AnnotationStore>((set, get) => ({
 
   setActiveColor: (color) => set({ activeColor: color }),
 
-  toggleHighlightMode: () => set({ isHighlightMode: !get().isHighlightMode }),
+  toggleHighlightMode: () => {
+    const newMode = !get().isHighlightMode;
+    set({ isHighlightMode: newMode });
+    if (newMode && onHighlightModeActivated) {
+      onHighlightModeActivated();
+    }
+  },
 
   setHighlightMode: (mode) => set({ isHighlightMode: mode }),
 

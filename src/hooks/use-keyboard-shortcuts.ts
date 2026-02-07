@@ -3,12 +3,14 @@
 import { useEffect } from "react";
 import { usePDFStore } from "@/stores/pdf-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
+import { useAIStore } from "@/stores/ai-store";
 import { deleteAnnotation as deleteAnnotationApi } from "@/lib/annotations";
 
 export function useKeyboardShortcuts() {
   const { nextPage, previousPage, zoomIn, zoomOut } = usePDFStore();
   const { toggleHighlightMode, selectedAnnotationId, removeAnnotation, selectAnnotation } =
     useAnnotationStore();
+  const { toggleAIMode, isSidebarOpen, closeSidebar } = useAIStore();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,6 +47,11 @@ export function useKeyboardShortcuts() {
           e.preventDefault();
           toggleHighlightMode();
           break;
+        case "a":
+        case "A":
+          e.preventDefault();
+          toggleAIMode();
+          break;
         case "Delete":
         case "Backspace":
           if (selectedAnnotationId) {
@@ -57,12 +64,16 @@ export function useKeyboardShortcuts() {
           break;
         case "Escape":
           e.preventDefault();
-          selectAnnotation(null);
+          if (isSidebarOpen) {
+            closeSidebar();
+          } else {
+            selectAnnotation(null);
+          }
           break;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [nextPage, previousPage, zoomIn, zoomOut, toggleHighlightMode, selectedAnnotationId, removeAnnotation, selectAnnotation]);
+  }, [nextPage, previousPage, zoomIn, zoomOut, toggleHighlightMode, selectedAnnotationId, removeAnnotation, selectAnnotation, toggleAIMode, isSidebarOpen, closeSidebar]);
 }

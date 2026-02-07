@@ -215,11 +215,11 @@ goodnotes-clone/
 - [x] Add color picker and editing
 
 ### Phase 4: AI Integration (Week 3-4)
-- [ ] Set up Claude API integration
-- [ ] Implement PDF text extraction
-- [ ] Build AI sidebar component
-- [ ] Create context management
-- [ ] Add streaming responses
+- [x] Set up Claude API integration
+- [x] Implement PDF text extraction
+- [x] Build AI sidebar component
+- [x] Create context management
+- [x] Add streaming responses
 
 ### Phase 5: Polish & Testing (Week 4)
 - [ ] Use Playwright MCP for UX review
@@ -291,21 +291,20 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: Phase 3 Complete → Moving to Phase 4 (AI Integration)
-- All Phase 1 & 2 features (auth, upload, PDF viewer, navigation, zoom)
-- Highlight tool with text selection detection via `window.getSelection()` + `Range.getClientRects()`
-- Normalized position storage (0-1 range) for zoom-independent highlights
-- Multi-rect highlights for multi-line text selections with adjacent rect merging
-- Color picker with 5 colors (Yellow, Green, Blue, Pink, Purple) + checkmark on active
-- Highlight mode toggle (H key) — auto-creates highlights with active color
-- Selection popup for quick highlight creation when not in highlight mode
-- HighlightLayer renders as child of react-pdf `<Page>` with percentage-based positioning
-- Optimistic UI updates with API sync (temp ID → server ID replacement)
-- Keyboard shortcuts: H (highlight mode), Delete/Backspace (delete), Escape (deselect)
-- Annotation CRUD API with normalized rect validation (0-1 range)
-- Separate Zustand store for annotation state (decoupled from PDF store)
-- 85 tests passing across 9 test files
+Phase: Phase 4 Complete → Moving to Phase 5 (Polish & Testing)
+- All Phase 1-3 features (auth, upload, PDF viewer, highlights, annotations)
+- **AI Mode**: Toggle via toolbar Sparkles button or `A` key — mutually exclusive with highlight mode
+- **Streaming AI Explanations**: Select text in AI mode → sidebar opens with streaming Claude response
+- **Follow-up Chat**: Ask follow-up questions in the AI sidebar chat interface
+- **Smart Context**: `getRelevantContext()` sends target page + surrounding pages (not full doc) to Claude
+- **SSE Streaming**: Both `/api/ai/explain` and `/api/ai/chat` use Server-Sent Events for real-time streaming
+- **AI Sidebar**: Fixed-width right panel (w-96) with header, selected text preview, message bubbles, and input
+- **AI Zustand Store**: Separate store for AI state (mode, sidebar, conversation, streaming)
+- **Keyboard Shortcuts**: A (AI mode), Escape (close sidebar), plus all previous shortcuts
+- **Cross-store coordination**: AI mode ↔ highlight mode mutual exclusivity via callback pattern (avoids circular imports)
+- 160 tests passing across 14 test files
 - Build passes cleanly
+- UX Review: 8/10 — desktop UX solid, mobile responsiveness needs work (Phase 5)
 
 ## Decisions Log
 - 2026-02-05: Chose Next.js App Router for better server components
@@ -326,3 +325,8 @@ Phase: Phase 3 Complete → Moving to Phase 4 (AI Integration)
 - 2026-02-06: Zustand selector with `.filter()` causes infinite re-renders — get full array from store, filter in component with `useMemo`
 - 2026-02-06: react-pdf `<Page>` accepts children rendered inside its `position: relative` container — used for HighlightLayer overlay
 - 2026-02-06: `mixBlendMode: "multiply"` gives natural highlighter pen appearance on PDF text
+- 2026-02-07: AI streaming uses Anthropic SDK `client.messages.stream()` with SSE format (`data: {"text":"delta"}\n\n`)
+- 2026-02-07: Smart context chunking sends target page + adjacent pages within 8000 char budget to Claude
+- 2026-02-07: Cross-store coordination (AI ↔ highlight mode) uses callback pattern to avoid circular imports between Zustand stores
+- 2026-02-07: `scrollIntoView?.()` with optional chaining needed for jsdom compatibility in tests
+- 2026-02-07: AI sidebar uses `next/dynamic` with `ssr: false` (same pattern as PDFCanvas) for client-only rendering

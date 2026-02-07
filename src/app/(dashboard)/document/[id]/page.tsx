@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { PDFToolbar } from "@/components/pdf/PDFToolbar";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { usePDFStore } from "@/stores/pdf-store";
+import { useAIStore } from "@/stores/ai-store";
 
 const PDFCanvas = dynamic(
   () => import("@/components/pdf/PDFCanvas").then((mod) => mod.PDFCanvas),
@@ -19,6 +20,11 @@ const PDFCanvas = dynamic(
     ),
   }
 );
+
+const AISidebar = dynamic(
+  () => import("@/components/ai/AISidebar").then((mod) => mod.AISidebar),
+  { ssr: false }
+);
 import type { DocumentMeta } from "@/types";
 
 export default function DocumentPage() {
@@ -28,6 +34,7 @@ export default function DocumentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const { setDocument: setStoreDoc, reset } = usePDFStore();
+  const resetAI = useAIStore((s) => s.reset);
 
   useKeyboardShortcuts();
 
@@ -56,8 +63,9 @@ export default function DocumentPage() {
 
     return () => {
       reset();
+      resetAI();
     };
-  }, [params.id, setStoreDoc, reset]);
+  }, [params.id, setStoreDoc, reset, resetAI]);
 
   if (loading) {
     return (
@@ -84,7 +92,10 @@ export default function DocumentPage() {
   return (
     <div className="flex h-screen flex-col">
       <PDFToolbar title={document.title} />
-      <PDFCanvas fileUrl={document.fileUrl} />
+      <div className="flex flex-1 overflow-hidden">
+        <PDFCanvas fileUrl={document.fileUrl} />
+        <AISidebar />
+      </div>
     </div>
   );
 }

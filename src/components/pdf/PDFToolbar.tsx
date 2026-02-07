@@ -12,6 +12,7 @@ import {
   Highlighter,
   Trash2,
   Check,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { usePDFStore } from "@/stores/pdf-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
+import { useAIStore } from "@/stores/ai-store";
 import { HIGHLIGHT_COLORS } from "@/types";
 import { deleteAnnotation as deleteAnnotationApi } from "@/lib/annotations";
 import { useToast } from "@/hooks/use-toast";
@@ -44,6 +46,7 @@ export function PDFToolbar({ title }: PDFToolbarProps) {
     removeAnnotation,
     selectAnnotation,
   } = useAnnotationStore();
+  const { isAIMode, toggleAIMode } = useAIStore();
   const [pageInput, setPageInput] = useState("");
   const { toast } = useToast();
 
@@ -170,6 +173,19 @@ export function PDFToolbar({ title }: PDFToolbarProps) {
             </Button>
           )}
         </div>
+
+        {/* Divider */}
+        <div className="h-6 w-px bg-border" />
+
+        {/* AI tools */}
+        <Button
+          variant={isAIMode ? "default" : "ghost"}
+          size="icon"
+          onClick={toggleAIMode}
+          title="AI mode (A)"
+        >
+          <Sparkles className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Right: Zoom controls */}
