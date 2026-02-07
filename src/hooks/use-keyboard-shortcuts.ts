@@ -2,9 +2,13 @@
 
 import { useEffect } from "react";
 import { usePDFStore } from "@/stores/pdf-store";
+import { useAnnotationStore } from "@/stores/annotation-store";
+import { deleteAnnotation as deleteAnnotationApi } from "@/lib/annotations";
 
 export function useKeyboardShortcuts() {
   const { nextPage, previousPage, zoomIn, zoomOut } = usePDFStore();
+  const { toggleHighlightMode, selectedAnnotationId, removeAnnotation, selectAnnotation } =
+    useAnnotationStore();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -36,10 +40,29 @@ export function useKeyboardShortcuts() {
           e.preventDefault();
           zoomOut();
           break;
+        case "h":
+        case "H":
+          e.preventDefault();
+          toggleHighlightMode();
+          break;
+        case "Delete":
+        case "Backspace":
+          if (selectedAnnotationId) {
+            e.preventDefault();
+            const id = selectedAnnotationId;
+            removeAnnotation(id);
+            selectAnnotation(null);
+            deleteAnnotationApi(id).catch(console.error);
+          }
+          break;
+        case "Escape":
+          e.preventDefault();
+          selectAnnotation(null);
+          break;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [nextPage, previousPage, zoomIn, zoomOut]);
+  }, [nextPage, previousPage, zoomIn, zoomOut, toggleHighlightMode, selectedAnnotationId, removeAnnotation, selectAnnotation]);
 }

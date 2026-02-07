@@ -21,6 +21,51 @@ export const HIGHLIGHT_COLORS: HighlightColor[] = [
   { name: "Purple", value: "#A78BFA", bg: "bg-purple-400/30" },
 ];
 
+// Normalized rectangle (0-1 range, relative to page dimensions)
+export interface NormalizedRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+// Position stored in DB — array of rects for multi-line highlights
+export interface HighlightPosition {
+  rects: NormalizedRect[];
+}
+
+// Client-side Annotation object (matches API response shape)
+export interface Annotation {
+  id: string;
+  documentId: string;
+  userId: string;
+  type: AnnotationType;
+  pageNumber: number;
+  color: string | null;
+  position: HighlightPosition;
+  selectedText: string | null;
+  content: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// For creating a new annotation
+export interface CreateAnnotationInput {
+  documentId: string;
+  type: AnnotationType;
+  pageNumber: number;
+  color?: string;
+  position: HighlightPosition;
+  selectedText?: string;
+  content?: string;
+}
+
+// For updating an existing annotation
+export interface UpdateAnnotationInput {
+  color?: string;
+  content?: string;
+}
+
 export interface AIMessage {
   role: "user" | "assistant";
   content: string;

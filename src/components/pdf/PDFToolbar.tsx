@@ -9,10 +9,23 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize,
+  Highlighter,
+  Trash2,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { usePDFStore } from "@/stores/pdf-store";
+import { useAnnotationStore } from "@/stores/annotation-store";
+import { HIGHLIGHT_COLORS } from "@/types";
+import { deleteAnnotation as deleteAnnotationApi } from "@/lib/annotations";
+import { useToast } from "@/hooks/use-toast";
 
 interface PDFToolbarProps {
   title: string;
@@ -22,7 +35,17 @@ export function PDFToolbar({ title }: PDFToolbarProps) {
   const router = useRouter();
   const { currentPage, numPages, scale, nextPage, previousPage, setCurrentPage, zoomIn, zoomOut, setScale } =
     usePDFStore();
+  const {
+    isHighlightMode,
+    toggleHighlightMode,
+    activeColor,
+    setActiveColor,
+    selectedAnnotationId,
+    removeAnnotation,
+    selectAnnotation,
+  } = useAnnotationStore();
   const [pageInput, setPageInput] = useState("");
+  const { toast } = useToast();
 
   const handlePageSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +54,22 @@ export function PDFToolbar({ title }: PDFToolbarProps) {
       setCurrentPage(page);
     }
     setPageInput("");
+  };
+
+  const handleDeleteAnnotation = async () => {
+    if (!selectedAnnotationId) return;
+    const id = selectedAnnotationId;
+    removeAnnotation(id);
+    selectAnnotation(null);
+    try {
+      await deleteAnnotationApi(id);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to delete highlight.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -43,34 +82,94 @@ export function PDFToolbar({ title }: PDFToolbarProps) {
         <h1 className="max-w-[300px] truncate text-sm font-medium">{title}</h1>
       </div>
 
-      {/* Center: Page navigation */}
-      <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={previousPage}
-          disabled={currentPage <= 1}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <form onSubmit={handlePageSubmit} className="flex items-center gap-1">
-          <Input
-            className="h-8 w-12 text-center text-sm"
-            value={pageInput || currentPage}
-            onChange={(e) => setPageInput(e.target.value)}
-            onFocus={() => setPageInput(String(currentPage))}
-            onBlur={() => setPageInput("")}
-          />
-          <span className="text-sm text-muted-foreground">/ {numPages}</span>
-        </form>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={nextPage}
-          disabled={currentPage >= numPages}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+      {/* Center: Page navigation + Annotation tools */}
+      <div className="flex items-center gap-4">
+        {/* Page navigation */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={previousPage}
+            disabled={currentPage <= 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <form onSubmit={handlePageSubmit} className="flex items-center gap-1">
+            <Input
+              className="h-8 w-12 text-center text-sm"
+              value={pageInput || currentPage}
+              onChange={(e) => setPageInput(e.target.value)}
+              onFocus={() => setPageInput(String(currentPage))}
+              onBlur={() => setPageInput("")}
+            />
+            <span className="text-sm text-muted-foreground">/ {numPages}</span>
+          </form>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={nextPage}
+            disabled={currentPage >= numPages}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Divider */}
+        <div className="h-6 w-px bg-border" />
+
+        {/* Annotation tools */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant={isHighlightMode ? "default" : "ghost"}
+            size="icon"
+            onClick={toggleHighlightMode}
+            title="Highlight mode (H)"
+          >
+            <Highlighter className="h-4 w-4" />
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" title="Highlight color">
+                <div
+                  className="h-4 w-4 rounded-full border border-border"
+                  style={{ backgroundColor: activeColor.value }}
+                />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center">
+              {HIGHLIGHT_COLORS.map((color) => (
+                <DropdownMenuItem
+                  key={color.name}
+                  onClick={() => setActiveColor(color)}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center">
+                    <div
+                      className="mr-2 h-4 w-4 rounded-full"
+                      style={{ backgroundColor: color.value }}
+                    />
+                    {color.name}
+                  </div>
+                  {activeColor.value === color.value && (
+                    <Check className="ml-2 h-4 w-4" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {selectedAnnotationId && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleDeleteAnnotation}
+              title="Delete highlight (Delete)"
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Right: Zoom controls */}

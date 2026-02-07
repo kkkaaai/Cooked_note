@@ -209,10 +209,10 @@ goodnotes-clone/
 - [x] Add page navigation and zoom
 
 ### Phase 3: Annotation System (Week 2-3)
-- [ ] Build highlight tool UI
-- [ ] Implement text selection detection
-- [ ] Create annotation storage
-- [ ] Add color picker and editing
+- [x] Build highlight tool UI
+- [x] Implement text selection detection
+- [x] Create annotation storage
+- [x] Add color picker and editing
 
 ### Phase 4: AI Integration (Week 3-4)
 - [ ] Set up Claude API integration
@@ -291,14 +291,20 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: Phase 2 Complete → Moving to Phase 3 (Annotation System)
-- PDF upload to Supabase Storage with client-side + server-side validation (50MB, PDF-only)
-- Document list on dashboard (responsive grid, delete with storage cleanup)
-- PDF viewer with react-pdf (page rendering, text layer, annotation layer)
-- Page navigation (prev/next, jump to page) + zoom controls (in/out, reset)
-- Keyboard shortcuts (arrow keys for pages, +/- for zoom)
-- Zustand store for PDF viewer state
-- 23 tests passing (stores, utils, components)
+Phase: Phase 3 Complete → Moving to Phase 4 (AI Integration)
+- All Phase 1 & 2 features (auth, upload, PDF viewer, navigation, zoom)
+- Highlight tool with text selection detection via `window.getSelection()` + `Range.getClientRects()`
+- Normalized position storage (0-1 range) for zoom-independent highlights
+- Multi-rect highlights for multi-line text selections with adjacent rect merging
+- Color picker with 5 colors (Yellow, Green, Blue, Pink, Purple) + checkmark on active
+- Highlight mode toggle (H key) — auto-creates highlights with active color
+- Selection popup for quick highlight creation when not in highlight mode
+- HighlightLayer renders as child of react-pdf `<Page>` with percentage-based positioning
+- Optimistic UI updates with API sync (temp ID → server ID replacement)
+- Keyboard shortcuts: H (highlight mode), Delete/Backspace (delete), Escape (deselect)
+- Annotation CRUD API with normalized rect validation (0-1 range)
+- Separate Zustand store for annotation state (decoupled from PDF store)
+- 85 tests passing across 9 test files
 - Build passes cleanly
 
 ## Decisions Log
@@ -316,3 +322,7 @@ Phase: Phase 2 Complete → Moving to Phase 3 (Annotation System)
 - 2026-02-06: Server-side PDF processing uses `pdfjs-dist/legacy/build/pdf.mjs` (avoids DOMMatrix dependency)
 - 2026-02-06: Supabase Storage uses service role key server-side, bucket "documents", path `{userId}/{timestamp}-{fileName}`
 - 2026-02-06: @testing-library/react needs explicit cleanup() in vitest setup when globals: true not set
+- 2026-02-06: Annotation positions stored as normalized rects (0-1 range) in `{ rects: [...] }` format for multi-line support
+- 2026-02-06: Zustand selector with `.filter()` causes infinite re-renders — get full array from store, filter in component with `useMemo`
+- 2026-02-06: react-pdf `<Page>` accepts children rendered inside its `position: relative` container — used for HighlightLayer overlay
+- 2026-02-06: `mixBlendMode: "multiply"` gives natural highlighter pen appearance on PDF text

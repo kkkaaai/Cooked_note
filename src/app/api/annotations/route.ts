@@ -3,16 +3,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
+const normalizedRectSchema = z.object({
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  width: z.number().min(0).max(1),
+  height: z.number().min(0).max(1),
+});
+
 const createAnnotationSchema = z.object({
   documentId: z.string().uuid(),
   type: z.enum(["highlight", "note", "ai_explanation"]),
   pageNumber: z.number().int().positive(),
   color: z.string().optional(),
   position: z.object({
-    x: z.number(),
-    y: z.number(),
-    width: z.number(),
-    height: z.number(),
+    rects: z.array(normalizedRectSchema).min(1),
   }),
   selectedText: z.string().optional(),
   content: z.string().optional(),
