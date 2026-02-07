@@ -14,6 +14,7 @@ import { useRegionSelect } from "@/hooks/use-region-select";
 import { captureRegion } from "@/lib/screenshot";
 import { HighlightLayer } from "./HighlightLayer";
 import { RegionSelectOverlay } from "./RegionSelectOverlay";
+import { ContinuousScrollView } from "./ContinuousScrollView";
 import { SelectionPopup } from "./SelectionPopup";
 import {
   fetchAnnotations,
@@ -27,7 +28,7 @@ interface PDFCanvasProps {
 }
 
 export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
-  const { currentPage, scale, numPages, setDocument, documentId } =
+  const { currentPage, scale, numPages, setDocument, documentId, viewMode } =
     usePDFStore();
   const {
     addAnnotation,
@@ -41,18 +42,49 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  // Helper: find which page a point lands on (for continuous mode)
+  const getPageFromPoint = useCallback((x: number, y: number) => {
+    if (!containerRef.current) return null;
+    const wrappers = Array.from(containerRef.current.querySelectorAll("[data-page-number]"));
+    for (const wrapper of wrappers) {
+      const rect = wrapper.getBoundingClientRect();
+      if (y >= rect.top && y <= rect.bottom && x >= rect.left && x <= rect.right) {
+        // react-pdf's Page div also has data-page-number, so we may hit
+        // the Page itself instead of our outer wrapper
+        const pageEl = wrapper.classList.contains("react-pdf__Page")
+          ? wrapper as HTMLElement
+          : wrapper.querySelector(".react-pdf__Page") as HTMLElement;
+        if (!pageEl) return null;
+        return {
+          pageNumber: Number(wrapper.getAttribute("data-page-number")),
+          pageElement: pageEl,
+        };
+      }
+    }
+    return null;
+  }, []);
+
   const { selection, clearSelection } = useTextSelection({
     containerRef,
     pageNumber: currentPage,
     enabled: !isAIMode,
+    resolvePageFromSelection: viewMode === "continuous",
   });
 
   // Region selection for AI mode (screenshot capture)
   const handleRegionSelected = useCallback(
     ({ region, pageNumber }: { region: import("@/types").NormalizedRect; pageNumber: number }) => {
-      const pageEl = containerRef.current?.querySelector(
-        ".react-pdf__Page"
-      ) as HTMLElement | null;
+      let pageEl: HTMLElement | null;
+
+      if (viewMode === "continuous") {
+        pageEl = containerRef.current?.querySelector(
+          `[data-page-number="${pageNumber}"] .react-pdf__Page`
+        ) as HTMLElement | null;
+      } else {
+        pageEl = containerRef.current?.querySelector(
+          ".react-pdf__Page"
+        ) as HTMLElement | null;
+      }
       if (!pageEl) return;
 
       const base64 = captureRegion(pageEl, region);
@@ -75,14 +107,15 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
 
       useAIStore.getState().addScreenshot(screenshot);
     },
-    [toast]
+    [toast, viewMode]
   );
 
-  const { isSelecting, selectionRect } = useRegionSelect({
+  const { isSelecting, selectionRect, activeRegionPage } = useRegionSelect({
     containerRef,
     pageNumber: currentPage,
     enabled: isAIMode,
     onRegionSelected: handleRegionSelected,
+    getPageFromPoint: viewMode === "continuous" ? getPageFromPoint : undefined,
   });
 
   // Fetch annotations on document load
@@ -164,12 +197,19 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
     [documentId, setDocument]
   );
 
+  // Reset scroll when switching view modes
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, [viewMode]);
+
   return (
     <div
       ref={containerRef}
-      className={`flex flex-1 items-start justify-center overflow-auto bg-muted/30 p-4${
-        isHighlightMode ? " cursor-text" : isAIMode ? " cursor-crosshair" : ""
-      }`}
+      className={`flex flex-1 overflow-auto bg-muted/30 p-4${
+        viewMode === "single" ? " items-start justify-center" : " justify-center"
+      }${isHighlightMode ? " cursor-text" : isAIMode ? " cursor-crosshair" : ""}`}
       onClick={handleContainerClick}
     >
       <Document
@@ -190,7 +230,7 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
           </div>
         }
       >
-        {numPages > 0 && (
+        {viewMode === "single" && numPages > 0 && (
           <Page
             pageNumber={currentPage}
             scale={scale}
@@ -209,6 +249,17 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
               />
             )}
           </Page>
+        )}
+        {viewMode === "continuous" && numPages > 0 && (
+          <ContinuousScrollView
+            numPages={numPages}
+            scale={scale}
+            containerRef={containerRef}
+            isAIMode={isAIMode}
+            isSelecting={isSelecting}
+            selectionRect={selectionRect}
+            activeRegionPage={activeRegionPage}
+          />
         )}
       </Document>
 

@@ -12,6 +12,8 @@ describe("usePDFStore", () => {
     expect(state.numPages).toBe(0);
     expect(state.currentPage).toBe(1);
     expect(state.scale).toBe(1.0);
+    expect(state.viewMode).toBe("single");
+    expect(state.scrollTarget).toBeNull();
   });
 
   it("setDocument sets id, numPages, and resets page/scale", () => {
@@ -98,6 +100,7 @@ describe("usePDFStore", () => {
     usePDFStore.getState().setDocument("doc-1", 10);
     usePDFStore.getState().setCurrentPage(5);
     usePDFStore.getState().setScale(2.0);
+    usePDFStore.getState().setViewMode("continuous");
     usePDFStore.getState().reset();
 
     const state = usePDFStore.getState();
@@ -105,5 +108,58 @@ describe("usePDFStore", () => {
     expect(state.numPages).toBe(0);
     expect(state.currentPage).toBe(1);
     expect(state.scale).toBe(1.0);
+    expect(state.viewMode).toBe("single");
+    expect(state.scrollTarget).toBeNull();
+  });
+
+  describe("view mode", () => {
+    beforeEach(() => {
+      usePDFStore.getState().setDocument("doc-1", 10);
+    });
+
+    it("setViewMode changes view mode", () => {
+      usePDFStore.getState().setViewMode("continuous");
+      expect(usePDFStore.getState().viewMode).toBe("continuous");
+    });
+
+    it("setViewMode clears scrollTarget", () => {
+      usePDFStore.getState().setViewMode("continuous");
+      usePDFStore.getState().setCurrentPage(5); // sets scrollTarget
+      expect(usePDFStore.getState().scrollTarget).toBe(5);
+      usePDFStore.getState().setViewMode("single");
+      expect(usePDFStore.getState().scrollTarget).toBeNull();
+    });
+
+    it("setCurrentPage sets scrollTarget in continuous mode", () => {
+      usePDFStore.getState().setViewMode("continuous");
+      usePDFStore.getState().setCurrentPage(3);
+      expect(usePDFStore.getState().scrollTarget).toBe(3);
+    });
+
+    it("setCurrentPage does not set scrollTarget in single mode", () => {
+      usePDFStore.getState().setCurrentPage(3);
+      expect(usePDFStore.getState().scrollTarget).toBeNull();
+    });
+
+    it("nextPage sets scrollTarget in continuous mode", () => {
+      usePDFStore.getState().setViewMode("continuous");
+      usePDFStore.getState().nextPage();
+      expect(usePDFStore.getState().scrollTarget).toBe(2);
+    });
+
+    it("previousPage sets scrollTarget in continuous mode", () => {
+      usePDFStore.getState().setViewMode("continuous");
+      usePDFStore.getState().setCurrentPage(5);
+      usePDFStore.getState().previousPage();
+      expect(usePDFStore.getState().scrollTarget).toBe(4);
+    });
+
+    it("clearScrollTarget resets scrollTarget to null", () => {
+      usePDFStore.getState().setViewMode("continuous");
+      usePDFStore.getState().setCurrentPage(5);
+      expect(usePDFStore.getState().scrollTarget).toBe(5);
+      usePDFStore.getState().clearScrollTarget();
+      expect(usePDFStore.getState().scrollTarget).toBeNull();
+    });
   });
 });

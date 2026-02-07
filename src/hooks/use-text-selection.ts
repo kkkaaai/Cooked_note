@@ -14,6 +14,7 @@ interface UseTextSelectionOptions {
   containerRef: React.RefObject<HTMLDivElement | null>;
   pageNumber: number;
   enabled: boolean;
+  resolvePageFromSelection?: boolean;
 }
 
 /**
@@ -54,6 +55,7 @@ export function useTextSelection({
   containerRef,
   pageNumber,
   enabled,
+  resolvePageFromSelection,
 }: UseTextSelectionOptions) {
   const [selection, setSelection] = useState<TextSelectionResult | null>(null);
 
@@ -77,9 +79,30 @@ export function useTextSelection({
       if (!selectedText) return;
 
       // Find the react-pdf Page element
-      const pageElement = container.querySelector(
-        ".react-pdf__Page"
-      ) as HTMLElement;
+      let pageElement: HTMLElement | null = null;
+      let resolvedPageNumber = pageNumber;
+
+      if (resolvePageFromSelection && sel.anchorNode) {
+        // In continuous mode, find which page the selection is on
+        const node = sel.anchorNode instanceof HTMLElement
+          ? sel.anchorNode
+          : sel.anchorNode.parentElement;
+        const wrapper = node?.closest("[data-page-number]");
+        if (wrapper) {
+          resolvedPageNumber = Number(wrapper.getAttribute("data-page-number"));
+          // react-pdf's Page div also has data-page-number, so .closest()
+          // may return the Page itself rather than our outer wrapper
+          if (wrapper.classList.contains("react-pdf__Page")) {
+            pageElement = wrapper as HTMLElement;
+          } else {
+            pageElement = wrapper.querySelector(".react-pdf__Page") as HTMLElement;
+          }
+        }
+      }
+
+      if (!pageElement) {
+        pageElement = container.querySelector(".react-pdf__Page") as HTMLElement;
+      }
       if (!pageElement) return;
 
       const pageRect = pageElement.getBoundingClientRect();
@@ -121,14 +144,14 @@ export function useTextSelection({
       setSelection({
         selectedText,
         rects: mergedRects,
-        pageNumber,
+        pageNumber: resolvedPageNumber,
         popupPosition,
       });
     };
 
     container.addEventListener("mouseup", handleMouseUp);
     return () => container.removeEventListener("mouseup", handleMouseUp);
-  }, [containerRef, pageNumber, enabled]);
+  }, [containerRef, pageNumber, enabled, resolvePageFromSelection]);
 
   return { selection, clearSelection };
 }

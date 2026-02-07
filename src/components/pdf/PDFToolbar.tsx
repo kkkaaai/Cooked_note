@@ -13,6 +13,8 @@ import {
   Trash2,
   Check,
   Sparkles,
+  Rows3,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +37,7 @@ interface PDFToolbarProps {
 
 export function PDFToolbar({ title }: PDFToolbarProps) {
   const router = useRouter();
-  const { currentPage, numPages, scale, nextPage, previousPage, setCurrentPage, zoomIn, zoomOut, setScale } =
+  const { currentPage, numPages, scale, nextPage, previousPage, setCurrentPage, zoomIn, zoomOut, setScale, viewMode, setViewMode } =
     usePDFStore();
   const {
     isHighlightMode,
@@ -116,6 +118,20 @@ export function PDFToolbar({ title }: PDFToolbarProps) {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* View mode toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setViewMode(viewMode === "single" ? "continuous" : "single")}
+          title={viewMode === "single" ? "Continuous scroll (V)" : "Single page (V)"}
+        >
+          {viewMode === "single" ? (
+            <Rows3 className="h-4 w-4" />
+          ) : (
+            <FileText className="h-4 w-4" />
+          )}
+        </Button>
 
         {/* Divider */}
         <div className="h-6 w-px bg-border" />

@@ -13,6 +13,7 @@ interface UseRegionSelectOptions {
   pageNumber: number;
   enabled: boolean;
   onRegionSelected: (result: RegionSelectResult) => void;
+  getPageFromPoint?: (x: number, y: number) => { pageNumber: number; pageElement: HTMLElement } | null;
 }
 
 export function useRegionSelect({
@@ -20,12 +21,15 @@ export function useRegionSelect({
   pageNumber,
   enabled,
   onRegionSelected,
+  getPageFromPoint,
 }: UseRegionSelectOptions) {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState<NormalizedRect | null>(null);
+  const [activeRegionPage, setActiveRegionPage] = useState<number | null>(null);
 
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const pageRectRef = useRef<DOMRect | null>(null);
+  const activePageNumRef = useRef<number>(pageNumber);
   const onRegionSelectedRef = useRef(onRegionSelected);
   onRegionSelectedRef.current = onRegionSelected;
 
@@ -37,6 +41,7 @@ export function useRegionSelect({
     if (!enabled) {
       setIsSelecting(false);
       setSelectionRect(null);
+      setActiveRegionPage(null);
       return;
     }
 
@@ -44,11 +49,19 @@ export function useRegionSelect({
     if (!container) return;
 
     const handleMouseDown = (e: MouseEvent) => {
-      const pageEl = getPageElement();
-      if (!pageEl) return;
+      let pageEl: HTMLElement | null;
+      let targetPageNumber: number;
 
-      // Only start if clicking inside the page element
-      if (!pageEl.contains(e.target as Node)) return;
+      if (getPageFromPoint) {
+        const result = getPageFromPoint(e.clientX, e.clientY);
+        if (!result) return;
+        pageEl = result.pageElement;
+        targetPageNumber = result.pageNumber;
+      } else {
+        pageEl = getPageElement();
+        targetPageNumber = pageNumber;
+        if (!pageEl || !pageEl.contains(e.target as Node)) return;
+      }
 
       // Left click only
       if (e.button !== 0) return;
@@ -58,6 +71,8 @@ export function useRegionSelect({
 
       const pageRect = pageEl.getBoundingClientRect();
       pageRectRef.current = pageRect;
+      activePageNumRef.current = targetPageNumber;
+      setActiveRegionPage(targetPageNumber);
 
       startRef.current = {
         x: e.clientX - pageRect.left,
@@ -117,6 +132,7 @@ export function useRegionSelect({
       pageRectRef.current = null;
       setIsSelecting(false);
       setSelectionRect(null);
+      setActiveRegionPage(null);
 
       // Minimum size threshold
       if (pixelWidth < MIN_SIZE_PX || pixelHeight < MIN_SIZE_PX) return;
@@ -128,7 +144,7 @@ export function useRegionSelect({
         height: pixelHeight / pageHeight,
       };
 
-      onRegionSelectedRef.current({ region, pageNumber });
+      onRegionSelectedRef.current({ region, pageNumber: activePageNumRef.current });
     };
 
     container.addEventListener("mousedown", handleMouseDown);
@@ -140,7 +156,7 @@ export function useRegionSelect({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [enabled, containerRef, getPageElement, pageNumber]);
+  }, [enabled, containerRef, getPageElement, pageNumber, getPageFromPoint]);
 
-  return { isSelecting, selectionRect };
+  return { isSelecting, selectionRect, activeRegionPage };
 }

@@ -57,3 +57,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Ensure proper stacking context for PDF page compositing —
+   fixes highlights rendering behind canvas with mixBlendMode */
+.react-pdf__Page {
+  isolation: isolate;
+}
+
+.react-pdf__Page canvas {
+  position: relative;
+  z-index: 0;
+}

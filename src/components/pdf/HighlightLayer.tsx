@@ -28,7 +28,7 @@ export function HighlightLayer({ pageNumber }: HighlightLayerProps) {
   return (
     <div
       className="absolute inset-0 pointer-events-none"
-      style={{ zIndex: 3 }}
+      style={{ zIndex: 4 }}
     >
       {highlights.map((annotation) => (
         <HighlightOverlay

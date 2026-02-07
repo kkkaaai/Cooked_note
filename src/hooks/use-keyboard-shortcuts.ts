@@ -7,7 +7,7 @@ import { useAIStore } from "@/stores/ai-store";
 import { deleteAnnotation as deleteAnnotationApi } from "@/lib/annotations";
 
 export function useKeyboardShortcuts() {
-  const { nextPage, previousPage, zoomIn, zoomOut } = usePDFStore();
+  const { nextPage, previousPage, zoomIn, zoomOut, viewMode, setViewMode } = usePDFStore();
   const { toggleHighlightMode, selectedAnnotationId, removeAnnotation, selectAnnotation } =
     useAnnotationStore();
   const { toggleAIMode, isSidebarOpen, closeSidebar } = useAIStore();
@@ -52,6 +52,11 @@ export function useKeyboardShortcuts() {
           e.preventDefault();
           toggleAIMode();
           break;
+        case "v":
+        case "V":
+          e.preventDefault();
+          setViewMode(viewMode === "single" ? "continuous" : "single");
+          break;
         case "Delete":
         case "Backspace":
           if (selectedAnnotationId) {
@@ -75,5 +80,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [nextPage, previousPage, zoomIn, zoomOut, toggleHighlightMode, selectedAnnotationId, removeAnnotation, selectAnnotation, toggleAIMode, isSidebarOpen, closeSidebar]);
+  }, [nextPage, previousPage, zoomIn, zoomOut, toggleHighlightMode, selectedAnnotationId, removeAnnotation, selectAnnotation, toggleAIMode, isSidebarOpen, closeSidebar, viewMode, setViewMode]);
 }

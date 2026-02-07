@@ -4,11 +4,15 @@ const MIN_SCALE = 0.5;
 const MAX_SCALE = 3.0;
 const SCALE_STEP = 0.25;
 
+export type ViewMode = "single" | "continuous";
+
 interface PDFState {
   documentId: string | null;
   numPages: number;
   currentPage: number;
   scale: number;
+  viewMode: ViewMode;
+  scrollTarget: number | null;
 }
 
 interface PDFActions {
@@ -19,6 +23,8 @@ interface PDFActions {
   zoomIn: () => void;
   zoomOut: () => void;
   setScale: (scale: number) => void;
+  setViewMode: (mode: ViewMode) => void;
+  clearScrollTarget: () => void;
   reset: () => void;
 }
 
@@ -29,28 +35,41 @@ export const usePDFStore = create<PDFStore>((set, get) => ({
   numPages: 0,
   currentPage: 1,
   scale: 1.0,
+  viewMode: "single",
+  scrollTarget: null,
 
   setDocument: (id, numPages) =>
     set({ documentId: id, numPages, currentPage: 1, scale: 1.0 }),
 
   setCurrentPage: (page) => {
-    const { numPages } = get();
+    const { numPages, viewMode } = get();
     if (page >= 1 && page <= numPages) {
-      set({ currentPage: page });
+      set({
+        currentPage: page,
+        scrollTarget: viewMode === "continuous" ? page : null,
+      });
     }
   },
 
   nextPage: () => {
-    const { currentPage, numPages } = get();
+    const { currentPage, numPages, viewMode } = get();
     if (currentPage < numPages) {
-      set({ currentPage: currentPage + 1 });
+      const next = currentPage + 1;
+      set({
+        currentPage: next,
+        scrollTarget: viewMode === "continuous" ? next : null,
+      });
     }
   },
 
   previousPage: () => {
-    const { currentPage } = get();
+    const { currentPage, viewMode } = get();
     if (currentPage > 1) {
-      set({ currentPage: currentPage - 1 });
+      const prev = currentPage - 1;
+      set({
+        currentPage: prev,
+        scrollTarget: viewMode === "continuous" ? prev : null,
+      });
     }
   },
 
@@ -71,6 +90,17 @@ export const usePDFStore = create<PDFStore>((set, get) => ({
     set({ scale: clamped });
   },
 
+  setViewMode: (mode) => set({ viewMode: mode, scrollTarget: null }),
+
+  clearScrollTarget: () => set({ scrollTarget: null }),
+
   reset: () =>
-    set({ documentId: null, numPages: 0, currentPage: 1, scale: 1.0 }),
+    set({
+      documentId: null,
+      numPages: 0,
+      currentPage: 1,
+      scale: 1.0,
+      viewMode: "single",
+      scrollTarget: null,
+    }),
 }));

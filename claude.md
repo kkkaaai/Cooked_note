@@ -291,19 +291,15 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: Phase 4 Complete (Vision-based AI) → Moving to Phase 5 (Polish & Testing)
-- All Phase 1-3 features (auth, upload, PDF viewer, highlights, annotations)
-- **AI Mode**: Toggle via toolbar Sparkles button or `A` key — mutually exclusive with highlight mode
-- **Screenshot Region Capture**: In AI mode, draw a rectangle on PDF → captures that region as an image
-- **Multiple Screenshots**: Accumulate up to 5 screenshots as pending attachments before sending
-- **Vision-based Chat**: Screenshots (base64 PNG) + user prompt sent to Claude's vision API via `/api/ai/chat`
+Phase: Phase 5 (Polish & Testing)
+- All Phase 1-4 features (auth, upload, PDF viewer, highlights, annotations, AI)
+- **AI Screenshot Mode**: Draw rectangles on PDF → capture region screenshots → accumulate up to 5 → type prompt → Claude vision API
+- **Continuous Scroll**: Toggle between single-page and continuous scroll view modes (V key or toolbar button)
+- **Virtualized Rendering**: Only pages within +/-2 buffer of viewport are rendered; IntersectionObserver tracks visible pages
 - **Smart Context**: `getRelevantContextForPages()` sends referenced pages + adjacent pages to Claude
-- **SSE Streaming**: `/api/ai/chat` uses Server-Sent Events for real-time streaming
-- **AI Sidebar**: Fixed-width right panel (w-96) with header, screenshot gallery, message bubbles, and input with inline attachment previews
-- **AI Zustand Store**: Separate store for AI state (mode, sidebar, pendingScreenshots, conversation, streaming)
-- **Keyboard Shortcuts**: A (AI mode), Escape (close sidebar), plus all previous shortcuts
-- **Cross-store coordination**: AI mode ↔ highlight mode mutual exclusivity via callback pattern (avoids circular imports)
-- 182 tests passing across 15 test files
+- **SSE Streaming**: `/api/ai/chat` uses Server-Sent Events with vision content blocks
+- **Keyboard Shortcuts**: A (AI mode), V (view mode), H (highlight), Escape, +/- (zoom), arrows (navigate)
+- 195 tests passing across 16 test files
 - Build passes cleanly
 
 ## Decisions Log
@@ -337,3 +333,7 @@ Phase: Phase 4 Complete (Vision-based AI) → Moving to Phase 5 (Polish & Testin
 - 2026-02-07: Region selection hook uses mousedown/move/up with normalized 0-1 coords, min 10px threshold
 - 2026-02-07: `<img>` used for base64 screenshots instead of `next/image` (data URLs can't use next/image optimization)
 - 2026-02-07: `@testing-library/react` uses `getByAltText` (not `getByAlt`) for querying by alt attribute
+- 2026-02-07: Continuous scroll uses IntersectionObserver for page tracking + virtualization buffer of +/-2 pages
+- 2026-02-07: `usePDFStore.setState({ currentPage })` used directly (not `setCurrentPage`) from observer to avoid setting scrollTarget
+- 2026-02-07: IntersectionObserver not in jsdom — mock with class (not vi.fn arrow) since it needs `new` constructor
+- 2026-02-07: `NodeListOf<Element>` can't be iterated with `for...of` in TS default target — use `Array.from()` first
