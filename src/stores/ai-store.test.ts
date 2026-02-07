@@ -1,6 +1,17 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useAIStore } from "./ai-store";
 import { useAnnotationStore } from "./annotation-store";
+import type { Screenshot } from "@/types";
+
+function makeScreenshot(overrides: Partial<Screenshot> = {}): Screenshot {
+  return {
+    id: overrides.id ?? crypto.randomUUID(),
+    base64: overrides.base64 ?? "data:image/png;base64,abc",
+    pageNumber: overrides.pageNumber ?? 1,
+    region: overrides.region ?? { x: 0.1, y: 0.1, width: 0.5, height: 0.3 },
+    createdAt: overrides.createdAt ?? Date.now(),
+  };
+}
 
 describe("ai-store", () => {
   beforeEach(() => {
@@ -17,8 +28,8 @@ describe("ai-store", () => {
       expect(useAIStore.getState().isSidebarOpen).toBe(false);
     });
 
-    it("has no selected text", () => {
-      expect(useAIStore.getState().selectedText).toBeNull();
+    it("has no pending screenshots", () => {
+      expect(useAIStore.getState().pendingScreenshots).toEqual([]);
     });
 
     it("has empty messages", () => {
@@ -35,6 +46,10 @@ describe("ai-store", () => {
 
     it("has empty streaming text", () => {
       expect(useAIStore.getState().streamingText).toBe("");
+    });
+
+    it("has no documentId", () => {
+      expect(useAIStore.getState().documentId).toBeNull();
     });
   });
 
@@ -91,35 +106,53 @@ describe("ai-store", () => {
     });
   });
 
-  describe("startExplanation", () => {
-    it("sets documentId, selectedText, and pageNumber", () => {
-      useAIStore.getState().startExplanation("doc-1", "test text", 3);
-      const state = useAIStore.getState();
-      expect(state.documentId).toBe("doc-1");
-      expect(state.selectedText).toBe("test text");
-      expect(state.pageNumber).toBe(3);
+  describe("setDocumentId", () => {
+    it("sets document id", () => {
+      useAIStore.getState().setDocumentId("doc-1");
+      expect(useAIStore.getState().documentId).toBe("doc-1");
+    });
+  });
+
+  describe("screenshots", () => {
+    it("adds a screenshot", () => {
+      const ss = makeScreenshot();
+      useAIStore.getState().addScreenshot(ss);
+      expect(useAIStore.getState().pendingScreenshots).toHaveLength(1);
+      expect(useAIStore.getState().pendingScreenshots[0].id).toBe(ss.id);
     });
 
-    it("clears previous messages", () => {
-      useAIStore.getState().addMessage({ role: "user", content: "old" });
-      useAIStore.getState().startExplanation("doc-1", "text", 1);
-      expect(useAIStore.getState().messages).toEqual([]);
-    });
-
-    it("opens sidebar", () => {
-      useAIStore.getState().startExplanation("doc-1", "text", 1);
+    it("opens sidebar when adding first screenshot", () => {
+      useAIStore.getState().addScreenshot(makeScreenshot());
       expect(useAIStore.getState().isSidebarOpen).toBe(true);
     });
 
-    it("sets streaming to true", () => {
-      useAIStore.getState().startExplanation("doc-1", "text", 1);
-      expect(useAIStore.getState().isStreaming).toBe(true);
+    it("supports multiple screenshots", () => {
+      useAIStore.getState().addScreenshot(makeScreenshot({ id: "s1" }));
+      useAIStore.getState().addScreenshot(makeScreenshot({ id: "s2" }));
+      useAIStore.getState().addScreenshot(makeScreenshot({ id: "s3" }));
+      expect(useAIStore.getState().pendingScreenshots).toHaveLength(3);
     });
 
-    it("clears previous error", () => {
-      useAIStore.getState().setError("previous error");
-      useAIStore.getState().startExplanation("doc-1", "text", 1);
-      expect(useAIStore.getState().error).toBeNull();
+    it("caps at 5 screenshots", () => {
+      for (let i = 0; i < 6; i++) {
+        useAIStore.getState().addScreenshot(makeScreenshot({ id: `s${i}` }));
+      }
+      expect(useAIStore.getState().pendingScreenshots).toHaveLength(5);
+    });
+
+    it("removes a screenshot by id", () => {
+      useAIStore.getState().addScreenshot(makeScreenshot({ id: "s1" }));
+      useAIStore.getState().addScreenshot(makeScreenshot({ id: "s2" }));
+      useAIStore.getState().removeScreenshot("s1");
+      expect(useAIStore.getState().pendingScreenshots).toHaveLength(1);
+      expect(useAIStore.getState().pendingScreenshots[0].id).toBe("s2");
+    });
+
+    it("clears all screenshots", () => {
+      useAIStore.getState().addScreenshot(makeScreenshot({ id: "s1" }));
+      useAIStore.getState().addScreenshot(makeScreenshot({ id: "s2" }));
+      useAIStore.getState().clearScreenshots();
+      expect(useAIStore.getState().pendingScreenshots).toEqual([]);
     });
   });
 
@@ -182,12 +215,12 @@ describe("ai-store", () => {
   });
 
   describe("clearConversation", () => {
-    it("clears messages and selectedText", () => {
-      useAIStore.getState().startExplanation("doc-1", "text", 1);
+    it("clears messages and pending screenshots", () => {
       useAIStore.getState().addMessage({ role: "assistant", content: "hi" });
+      useAIStore.getState().addScreenshot(makeScreenshot());
       useAIStore.getState().clearConversation();
       expect(useAIStore.getState().messages).toEqual([]);
-      expect(useAIStore.getState().selectedText).toBeNull();
+      expect(useAIStore.getState().pendingScreenshots).toEqual([]);
     });
 
     it("clears streaming state", () => {
@@ -207,8 +240,9 @@ describe("ai-store", () => {
 
   describe("reset", () => {
     it("resets all state to initial values", () => {
-      useAIStore.getState().startExplanation("doc-1", "text", 1);
+      useAIStore.getState().setDocumentId("doc-1");
       useAIStore.getState().addMessage({ role: "assistant", content: "hi" });
+      useAIStore.getState().addScreenshot(makeScreenshot());
       useAIStore.getState().setError("error");
       useAIStore.getState().setAIMode(true);
 
@@ -217,7 +251,8 @@ describe("ai-store", () => {
       const state = useAIStore.getState();
       expect(state.isAIMode).toBe(false);
       expect(state.isSidebarOpen).toBe(false);
-      expect(state.selectedText).toBeNull();
+      expect(state.documentId).toBeNull();
+      expect(state.pendingScreenshots).toEqual([]);
       expect(state.messages).toEqual([]);
       expect(state.isStreaming).toBe(false);
       expect(state.streamingText).toBe("");

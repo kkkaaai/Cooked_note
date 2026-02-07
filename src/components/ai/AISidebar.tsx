@@ -4,11 +4,41 @@ import { useAIStore } from "@/stores/ai-store";
 import { AIChat } from "./AIChat";
 import { Button } from "@/components/ui/button";
 import { X, Sparkles } from "lucide-react";
+import type { Screenshot } from "@/types";
+
+function ScreenshotThumbnail({
+  screenshot,
+  onRemove,
+}: {
+  screenshot: Screenshot;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="group relative shrink-0">
+      <img
+        src={screenshot.base64}
+        alt={`Page ${screenshot.pageNumber} capture`}
+        className="h-16 w-auto rounded border object-cover"
+      />
+      <span className="absolute bottom-0.5 left-0.5 rounded bg-black/60 px-1 text-[10px] text-white">
+        p.{screenshot.pageNumber}
+      </span>
+      <button
+        onClick={onRemove}
+        className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+        title="Remove screenshot"
+      >
+        <X className="h-2.5 w-2.5" />
+      </button>
+    </div>
+  );
+}
 
 export function AISidebar() {
   const isSidebarOpen = useAIStore((s) => s.isSidebarOpen);
-  const selectedText = useAIStore((s) => s.selectedText);
+  const pendingScreenshots = useAIStore((s) => s.pendingScreenshots);
   const closeSidebar = useAIStore((s) => s.closeSidebar);
+  const removeScreenshot = useAIStore((s) => s.removeScreenshot);
 
   if (!isSidebarOpen) return null;
 
@@ -25,13 +55,21 @@ export function AISidebar() {
         </Button>
       </div>
 
-      {/* Selected text preview */}
-      {selectedText && (
+      {/* Pending screenshots preview */}
+      {pendingScreenshots.length > 0 && (
         <div className="border-b px-4 py-3">
-          <p className="mb-1 text-xs text-muted-foreground">Selected text</p>
-          <p className="line-clamp-3 text-sm italic">
-            &ldquo;{selectedText}&rdquo;
+          <p className="mb-2 text-xs text-muted-foreground">
+            Attached screenshots ({pendingScreenshots.length}/5)
           </p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {pendingScreenshots.map((ss) => (
+              <ScreenshotThumbnail
+                key={ss.id}
+                screenshot={ss}
+                onRemove={() => removeScreenshot(ss.id)}
+              />
+            ))}
+          </div>
         </div>
       )}
 

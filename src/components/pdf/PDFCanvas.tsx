@@ -10,14 +10,16 @@ import { usePDFStore } from "@/stores/pdf-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useAIStore } from "@/stores/ai-store";
 import { useTextSelection } from "@/hooks/use-text-selection";
-import { useAIExplain } from "@/hooks/use-ai-explain";
+import { useRegionSelect } from "@/hooks/use-region-select";
+import { captureRegion } from "@/lib/screenshot";
 import { HighlightLayer } from "./HighlightLayer";
+import { RegionSelectOverlay } from "./RegionSelectOverlay";
 import { SelectionPopup } from "./SelectionPopup";
 import {
   fetchAnnotations,
   createAnnotation as createAnnotationApi,
 } from "@/lib/annotations";
-import type { HighlightColor } from "@/types";
+import type { HighlightColor, Screenshot } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
 interface PDFCanvasProps {
@@ -36,14 +38,51 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
     reset: resetAnnotations,
   } = useAnnotationStore();
   const isAIMode = useAIStore((s) => s.isAIMode);
-  const { explain } = useAIExplain();
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const { selection, clearSelection } = useTextSelection({
     containerRef,
     pageNumber: currentPage,
-    enabled: true,
+    enabled: !isAIMode,
+  });
+
+  // Region selection for AI mode (screenshot capture)
+  const handleRegionSelected = useCallback(
+    ({ region, pageNumber }: { region: import("@/types").NormalizedRect; pageNumber: number }) => {
+      const pageEl = containerRef.current?.querySelector(
+        ".react-pdf__Page"
+      ) as HTMLElement | null;
+      if (!pageEl) return;
+
+      const base64 = captureRegion(pageEl, region);
+      if (!base64) {
+        toast({
+          title: "Capture failed",
+          description: "Could not capture the selected region. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const screenshot: Screenshot = {
+        id: crypto.randomUUID(),
+        base64,
+        pageNumber,
+        region,
+        createdAt: Date.now(),
+      };
+
+      useAIStore.getState().addScreenshot(screenshot);
+    },
+    [toast]
+  );
+
+  const { isSelecting, selectionRect } = useRegionSelect({
+    containerRef,
+    pageNumber: currentPage,
+    enabled: isAIMode,
+    onRegionSelected: handleRegionSelected,
   });
 
   // Fetch annotations on document load
@@ -64,15 +103,6 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selection, isHighlightMode]);
-
-  // AI mode: explain selected text
-  useEffect(() => {
-    if (isAIMode && !isHighlightMode && selection && documentId) {
-      explain(documentId, selection.selectedText, selection.pageNumber);
-      clearSelection();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selection, isAIMode, isHighlightMode]);
 
   // Deselect annotation when clicking on empty space
   const handleContainerClick = useCallback(() => {
@@ -137,7 +167,9 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
   return (
     <div
       ref={containerRef}
-      className={`flex flex-1 items-start justify-center overflow-auto bg-muted/30 p-4${isHighlightMode || isAIMode ? " cursor-text" : ""}`}
+      className={`flex flex-1 items-start justify-center overflow-auto bg-muted/30 p-4${
+        isHighlightMode ? " cursor-text" : isAIMode ? " cursor-crosshair" : ""
+      }`}
       onClick={handleContainerClick}
     >
       <Document
@@ -170,12 +202,18 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
             className="shadow-lg"
           >
             <HighlightLayer pageNumber={currentPage} />
+            {isAIMode && (
+              <RegionSelectOverlay
+                isSelecting={isSelecting}
+                selectionRect={selectionRect}
+              />
+            )}
           </Page>
         )}
       </Document>
 
-      {/* Selection popup (when not in highlight mode) */}
-      {selection && !isHighlightMode && selection.popupPosition && (
+      {/* Selection popup (when not in highlight mode and not in AI mode) */}
+      {selection && !isHighlightMode && !isAIMode && selection.popupPosition && (
         <SelectionPopup
           position={selection.popupPosition}
           onHighlight={handleCreateHighlight}

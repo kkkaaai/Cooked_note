@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { streamExplanation, streamChat } from "./ai-client";
+import { streamChat } from "./ai-client";
 
 // Helper to create a mock SSE ReadableStream
 function createSSEStream(events: string[]): ReadableStream<Uint8Array> {
@@ -14,7 +14,7 @@ function createSSEStream(events: string[]): ReadableStream<Uint8Array> {
   });
 }
 
-describe("streamExplanation", () => {
+describe("streamChat", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -26,23 +26,60 @@ describe("streamExplanation", () => {
     });
     vi.stubGlobal("fetch", mockFetch);
 
-    await streamExplanation(
-      { documentId: "doc-1", selectedText: "hello", pageNumber: 1 },
+    const messages = [
+      { role: "user" as const, content: "What does this mean?" },
+      { role: "assistant" as const, content: "It means..." },
+      { role: "user" as const, content: "Can you elaborate?" },
+    ];
+
+    await streamChat(
+      { documentId: "doc-1", messages },
       vi.fn(),
       vi.fn(),
       vi.fn()
     );
 
-    expect(mockFetch).toHaveBeenCalledWith("/api/ai/explain", {
+    expect(mockFetch).toHaveBeenCalledWith("/api/ai/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         documentId: "doc-1",
-        selectedText: "hello",
-        pageNumber: 1,
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
       }),
       signal: undefined,
     });
+  });
+
+  it("serializes contentBlocks when present", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      body: createSSEStream(["data: [DONE]\n\n"]),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const contentBlocks = [
+      { type: "image" as const, source: { type: "base64" as const, media_type: "image/png" as const, data: "abc123" } },
+      { type: "text" as const, text: "Explain this" },
+    ];
+
+    const messages = [
+      {
+        role: "user" as const,
+        content: "Explain this",
+        contentBlocks,
+      },
+    ];
+
+    await streamChat(
+      { documentId: "doc-1", messages },
+      vi.fn(),
+      vi.fn(),
+      vi.fn()
+    );
+
+    const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    // Should use contentBlocks instead of content string
+    expect(callBody.messages[0].content).toEqual(contentBlocks);
   });
 
   it("parses SSE text deltas and calls onTextDelta", async () => {
@@ -59,8 +96,8 @@ describe("streamExplanation", () => {
     const onTextDelta = vi.fn();
     const onDone = vi.fn();
 
-    await streamExplanation(
-      { documentId: "doc-1", selectedText: "test", pageNumber: 1 },
+    await streamChat(
+      { documentId: "doc-1", messages: [{ role: "user", content: "hi" }] },
       onTextDelta,
       onDone,
       vi.fn()
@@ -79,8 +116,8 @@ describe("streamExplanation", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const onDone = vi.fn();
-    await streamExplanation(
-      { documentId: "doc-1", selectedText: "test", pageNumber: 1 },
+    await streamChat(
+      { documentId: "doc-1", messages: [{ role: "user", content: "hi" }] },
       vi.fn(),
       onDone,
       vi.fn()
@@ -97,8 +134,8 @@ describe("streamExplanation", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const onError = vi.fn();
-    await streamExplanation(
-      { documentId: "doc-1", selectedText: "test", pageNumber: 1 },
+    await streamChat(
+      { documentId: "doc-1", messages: [{ role: "user", content: "hi" }] },
       vi.fn(),
       vi.fn(),
       onError
@@ -115,8 +152,8 @@ describe("streamExplanation", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const onError = vi.fn();
-    await streamExplanation(
-      { documentId: "doc-1", selectedText: "test", pageNumber: 1 },
+    await streamChat(
+      { documentId: "doc-1", messages: [{ role: "user", content: "hi" }] },
       vi.fn(),
       vi.fn(),
       onError
@@ -133,8 +170,8 @@ describe("streamExplanation", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const onDone = vi.fn();
-    await streamExplanation(
-      { documentId: "doc-1", selectedText: "test", pageNumber: 1 },
+    await streamChat(
+      { documentId: "doc-1", messages: [{ role: "user", content: "hi" }] },
       vi.fn(),
       onDone,
       vi.fn(),
@@ -142,75 +179,5 @@ describe("streamExplanation", () => {
     );
 
     expect(onDone).toHaveBeenCalled();
-  });
-});
-
-describe("streamChat", () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("calls POST with correct URL and body including messages", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      body: createSSEStream(["data: [DONE]\n\n"]),
-    });
-    vi.stubGlobal("fetch", mockFetch);
-
-    const messages = [
-      { role: "user" as const, content: "What does this mean?" },
-      { role: "assistant" as const, content: "It means..." },
-      { role: "user" as const, content: "Can you elaborate?" },
-    ];
-
-    await streamChat(
-      {
-        documentId: "doc-1",
-        selectedText: "test",
-        pageNumber: 2,
-        messages,
-      },
-      vi.fn(),
-      vi.fn(),
-      vi.fn()
-    );
-
-    expect(mockFetch).toHaveBeenCalledWith("/api/ai/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        documentId: "doc-1",
-        selectedText: "test",
-        pageNumber: 2,
-        messages,
-      }),
-      signal: undefined,
-    });
-  });
-
-  it("parses SSE text deltas correctly", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      body: createSSEStream([
-        'data: {"text":"Response"}\n\n',
-        "data: [DONE]\n\n",
-      ]),
-    });
-    vi.stubGlobal("fetch", mockFetch);
-
-    const onTextDelta = vi.fn();
-    await streamChat(
-      {
-        documentId: "doc-1",
-        selectedText: "test",
-        pageNumber: 1,
-        messages: [{ role: "user", content: "hi" }],
-      },
-      onTextDelta,
-      vi.fn(),
-      vi.fn()
-    );
-
-    expect(onTextDelta).toHaveBeenCalledWith("Response");
   });
 });

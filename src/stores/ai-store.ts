@@ -1,13 +1,14 @@
 import { create } from "zustand";
-import type { AIMessage } from "@/types";
+import type { AIMessage, Screenshot } from "@/types";
 import { useAnnotationStore, setOnHighlightModeActivated } from "@/stores/annotation-store";
+
+const MAX_SCREENSHOTS = 5;
 
 interface AIState {
   isAIMode: boolean;
   isSidebarOpen: boolean;
-  selectedText: string | null;
-  pageNumber: number | null;
   documentId: string | null;
+  pendingScreenshots: Screenshot[];
   messages: AIMessage[];
   isStreaming: boolean;
   streamingText: string;
@@ -19,7 +20,10 @@ interface AIActions {
   setAIMode: (mode: boolean) => void;
   openSidebar: () => void;
   closeSidebar: () => void;
-  startExplanation: (documentId: string, selectedText: string, pageNumber: number) => void;
+  setDocumentId: (documentId: string) => void;
+  addScreenshot: (screenshot: Screenshot) => void;
+  removeScreenshot: (id: string) => void;
+  clearScreenshots: () => void;
   addMessage: (message: AIMessage) => void;
   appendStreamingText: (text: string) => void;
   finalizeStreaming: () => void;
@@ -34,9 +38,8 @@ export type AIStore = AIState & AIActions;
 const initialState: AIState = {
   isAIMode: false,
   isSidebarOpen: false,
-  selectedText: null,
-  pageNumber: null,
   documentId: null,
+  pendingScreenshots: [],
   messages: [],
   isStreaming: false,
   streamingText: "",
@@ -50,7 +53,6 @@ export const useAIStore = create<AIStore>((set, get) => ({
     const newMode = !get().isAIMode;
     set({ isAIMode: newMode });
     if (newMode) {
-      // AI mode and highlight mode are mutually exclusive
       useAnnotationStore.getState().setHighlightMode(false);
     }
   },
@@ -66,18 +68,24 @@ export const useAIStore = create<AIStore>((set, get) => ({
 
   closeSidebar: () => set({ isSidebarOpen: false }),
 
-  startExplanation: (documentId, selectedText, pageNumber) => {
+  setDocumentId: (documentId) => set({ documentId }),
+
+  addScreenshot: (screenshot) => {
+    const { pendingScreenshots } = get();
+    if (pendingScreenshots.length >= MAX_SCREENSHOTS) return;
     set({
-      documentId,
-      selectedText,
-      pageNumber,
-      messages: [],
-      streamingText: "",
-      isStreaming: true,
+      pendingScreenshots: [...pendingScreenshots, screenshot],
       isSidebarOpen: true,
-      error: null,
     });
   },
+
+  removeScreenshot: (id) => {
+    set({
+      pendingScreenshots: get().pendingScreenshots.filter((s) => s.id !== id),
+    });
+  },
+
+  clearScreenshots: () => set({ pendingScreenshots: [] }),
 
   addMessage: (message) => {
     set({ messages: [...get().messages, message] });
@@ -107,8 +115,7 @@ export const useAIStore = create<AIStore>((set, get) => ({
   clearConversation: () => {
     set({
       messages: [],
-      selectedText: null,
-      pageNumber: null,
+      pendingScreenshots: [],
       streamingText: "",
       isStreaming: false,
       error: null,

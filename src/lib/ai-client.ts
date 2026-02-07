@@ -1,15 +1,7 @@
 import type { AIMessage } from "@/types";
 
-export interface ExplainParams {
-  documentId: string;
-  selectedText: string;
-  pageNumber: number;
-}
-
 export interface ChatParams {
   documentId: string;
-  selectedText: string;
-  pageNumber: number;
   messages: AIMessage[];
 }
 
@@ -63,37 +55,6 @@ async function parseSSEStream(
   }
 }
 
-export async function streamExplanation(
-  params: ExplainParams,
-  onTextDelta: (text: string) => void,
-  onDone: () => void,
-  onError: (error: string) => void,
-  signal?: AbortSignal
-): Promise<void> {
-  try {
-    const res = await fetch("/api/ai/explain", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-      signal,
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      onError(errorText || "Failed to get explanation");
-      return;
-    }
-
-    await parseSSEStream(res, onTextDelta, onDone, onError);
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      onDone();
-      return;
-    }
-    onError(error instanceof Error ? error.message : "Request failed");
-  }
-}
-
 export async function streamChat(
   params: ChatParams,
   onTextDelta: (text: string) => void,
@@ -102,10 +63,19 @@ export async function streamChat(
   signal?: AbortSignal
 ): Promise<void> {
   try {
+    // Serialize messages: use contentBlocks if present, otherwise plain content string
+    const serializedMessages = params.messages.map((m) => ({
+      role: m.role,
+      content: m.contentBlocks ?? m.content,
+    }));
+
     const res = await fetch("/api/ai/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
+      body: JSON.stringify({
+        documentId: params.documentId,
+        messages: serializedMessages,
+      }),
       signal,
     });
 

@@ -66,9 +66,37 @@ export interface UpdateAnnotationInput {
   content?: string;
 }
 
+// Screenshot captured from PDF canvas region
+export interface Screenshot {
+  id: string;
+  base64: string; // data URL (image/png)
+  pageNumber: number;
+  region: NormalizedRect;
+  createdAt: number;
+}
+
+// Anthropic vision API content blocks
+export interface ImageContentBlock {
+  type: "image";
+  source: {
+    type: "base64";
+    media_type: "image/png";
+    data: string; // raw base64 without data URL prefix
+  };
+}
+
+export interface TextContentBlock {
+  type: "text";
+  text: string;
+}
+
+export type ContentBlock = ImageContentBlock | TextContentBlock;
+
 export interface AIMessage {
   role: "user" | "assistant";
   content: string;
+  contentBlocks?: ContentBlock[]; // for API calls (user messages with images)
+  screenshots?: Screenshot[]; // for UI display of attached screenshots
 }
 
 export interface DocumentMeta {

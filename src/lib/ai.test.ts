@@ -4,6 +4,8 @@ import {
   getRelevantContext,
   buildExplainSystemPrompt,
   buildChatSystemPrompt,
+  buildVisionSystemPrompt,
+  getRelevantContextForPages,
 } from "./ai";
 
 describe("parsePageText", () => {
@@ -118,5 +120,57 @@ describe("buildChatSystemPrompt", () => {
   it("includes document context", () => {
     const prompt = buildChatSystemPrompt("my doc context", 5, "selected");
     expect(prompt).toContain("my doc context");
+  });
+});
+
+describe("buildVisionSystemPrompt", () => {
+  it("includes page count", () => {
+    const prompt = buildVisionSystemPrompt("context", 10);
+    expect(prompt).toContain("10 pages");
+  });
+
+  it("includes document context", () => {
+    const prompt = buildVisionSystemPrompt("my context", 5);
+    expect(prompt).toContain("my context");
+  });
+
+  it("mentions screenshots", () => {
+    const prompt = buildVisionSystemPrompt("context", 5);
+    expect(prompt).toContain("screenshot");
+  });
+});
+
+describe("getRelevantContextForPages", () => {
+  const threePages =
+    "--- Page 1 ---\nFirst page\n\n--- Page 2 ---\nSecond page\n\n--- Page 3 ---\nThird page";
+
+  it("includes all referenced pages", () => {
+    const context = getRelevantContextForPages(threePages, [1, 3], 10000);
+    expect(context).toContain("--- Page 1 ---");
+    expect(context).toContain("--- Page 3 ---");
+  });
+
+  it("sorts pages in order", () => {
+    const context = getRelevantContextForPages(threePages, [3, 1], 10000);
+    const page1Idx = context.indexOf("--- Page 1 ---");
+    const page3Idx = context.indexOf("--- Page 3 ---");
+    expect(page1Idx).toBeLessThan(page3Idx);
+  });
+
+  it("deduplicates page numbers", () => {
+    const context = getRelevantContextForPages(threePages, [2, 2, 2], 10000);
+    const matches = context.match(/--- Page 2 ---/g);
+    expect(matches).toHaveLength(1);
+  });
+
+  it("falls back to page 1 context when no pages provided", () => {
+    const context = getRelevantContextForPages(threePages, [], 10000);
+    expect(context).toContain("--- Page 1 ---");
+  });
+
+  it("expands around first referenced page with remaining budget", () => {
+    const context = getRelevantContextForPages(threePages, [2], 10000);
+    expect(context).toContain("--- Page 1 ---");
+    expect(context).toContain("--- Page 3 ---");
   });
 });

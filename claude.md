@@ -291,20 +291,20 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: Phase 4 Complete → Moving to Phase 5 (Polish & Testing)
+Phase: Phase 4 Complete (Vision-based AI) → Moving to Phase 5 (Polish & Testing)
 - All Phase 1-3 features (auth, upload, PDF viewer, highlights, annotations)
 - **AI Mode**: Toggle via toolbar Sparkles button or `A` key — mutually exclusive with highlight mode
-- **Streaming AI Explanations**: Select text in AI mode → sidebar opens with streaming Claude response
-- **Follow-up Chat**: Ask follow-up questions in the AI sidebar chat interface
-- **Smart Context**: `getRelevantContext()` sends target page + surrounding pages (not full doc) to Claude
-- **SSE Streaming**: Both `/api/ai/explain` and `/api/ai/chat` use Server-Sent Events for real-time streaming
-- **AI Sidebar**: Fixed-width right panel (w-96) with header, selected text preview, message bubbles, and input
-- **AI Zustand Store**: Separate store for AI state (mode, sidebar, conversation, streaming)
+- **Screenshot Region Capture**: In AI mode, draw a rectangle on PDF → captures that region as an image
+- **Multiple Screenshots**: Accumulate up to 5 screenshots as pending attachments before sending
+- **Vision-based Chat**: Screenshots (base64 PNG) + user prompt sent to Claude's vision API via `/api/ai/chat`
+- **Smart Context**: `getRelevantContextForPages()` sends referenced pages + adjacent pages to Claude
+- **SSE Streaming**: `/api/ai/chat` uses Server-Sent Events for real-time streaming
+- **AI Sidebar**: Fixed-width right panel (w-96) with header, screenshot gallery, message bubbles, and input with inline attachment previews
+- **AI Zustand Store**: Separate store for AI state (mode, sidebar, pendingScreenshots, conversation, streaming)
 - **Keyboard Shortcuts**: A (AI mode), Escape (close sidebar), plus all previous shortcuts
 - **Cross-store coordination**: AI mode ↔ highlight mode mutual exclusivity via callback pattern (avoids circular imports)
-- 160 tests passing across 14 test files
+- 182 tests passing across 15 test files
 - Build passes cleanly
-- UX Review: 8/10 — desktop UX solid, mobile responsiveness needs work (Phase 5)
 
 ## Decisions Log
 - 2026-02-05: Chose Next.js App Router for better server components
@@ -330,3 +330,10 @@ Phase: Phase 4 Complete → Moving to Phase 5 (Polish & Testing)
 - 2026-02-07: Cross-store coordination (AI ↔ highlight mode) uses callback pattern to avoid circular imports between Zustand stores
 - 2026-02-07: `scrollIntoView?.()` with optional chaining needed for jsdom compatibility in tests
 - 2026-02-07: AI sidebar uses `next/dynamic` with `ssr: false` (same pattern as PDFCanvas) for client-only rendering
+- 2026-02-07: Replaced text-selection AI with screenshot-based AI — draw box on PDF → capture region → send to Claude vision API
+- 2026-02-07: Deleted `/api/ai/explain` route — consolidated all AI into `/api/ai/chat` with vision support
+- 2026-02-07: Screenshot capture uses canvas `.width`/`.height` (pixel dims, not CSS) for correct DPR handling
+- 2026-02-07: Base64 screenshots downscaled to max 1200px longest side to keep API payloads reasonable
+- 2026-02-07: Region selection hook uses mousedown/move/up with normalized 0-1 coords, min 10px threshold
+- 2026-02-07: `<img>` used for base64 screenshots instead of `next/image` (data URLs can't use next/image optimization)
+- 2026-02-07: `@testing-library/react` uses `getByAltText` (not `getByAlt`) for querying by alt attribute

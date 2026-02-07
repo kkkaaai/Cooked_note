@@ -35,6 +35,7 @@ export default function DocumentPage() {
   const [error, setError] = useState(false);
   const { setDocument: setStoreDoc, reset } = usePDFStore();
   const resetAI = useAIStore((s) => s.reset);
+  const setAIDocumentId = useAIStore((s) => s.setDocumentId);
 
   useKeyboardShortcuts();
 
@@ -49,6 +50,7 @@ export default function DocumentPage() {
         const data = await res.json();
         setDocument(data);
         setStoreDoc(data.id, data.pageCount);
+        setAIDocumentId(data.id);
 
         // Update last opened timestamp
         fetch(`/api/documents/${params.id}`, { method: "PATCH" });
@@ -65,7 +67,7 @@ export default function DocumentPage() {
       reset();
       resetAI();
     };
-  }, [params.id, setStoreDoc, reset, resetAI]);
+  }, [params.id, setStoreDoc, reset, resetAI, setAIDocumentId]);
 
   if (loading) {
     return (

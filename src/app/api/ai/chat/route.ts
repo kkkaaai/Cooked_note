@@ -1,19 +1,39 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import { getAnthropicClient, getRelevantContext, buildChatSystemPrompt } from "@/lib/ai";
+import { getAnthropicClient, getRelevantContextForPages, buildVisionSystemPrompt } from "@/lib/ai";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
+const contentBlockSchema = z.union([
+  z.object({
+    type: z.literal("text"),
+    text: z.string(),
+  }),
+  z.object({
+    type: z.literal("image"),
+    source: z.object({
+      type: z.literal("base64"),
+      media_type: z.literal("image/png"),
+      data: z.string(),
+    }),
+  }),
+]);
+
+const messageContentSchema = z.union([
+  z.string(),
+  z.array(contentBlockSchema),
+]);
+
 const chatSchema = z.object({
   documentId: z.string().uuid(),
-  selectedText: z.string().min(1),
-  pageNumber: z.number().int().positive(),
-  messages: z.array(
-    z.object({
-      role: z.enum(["user", "assistant"]),
-      content: z.string(),
-    })
-  ),
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: messageContentSchema,
+      })
+    )
+    .min(1),
 });
 
 export async function POST(req: NextRequest) {
@@ -25,7 +45,10 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { documentId, selectedText, pageNumber, messages } = chatSchema.parse(body);
+    const { documentId, messages } = chatSchema.parse(body);
+
+    // Extract page numbers from metadata if available, default to page 1
+    const pageNumbers = [1];
 
     // Get document context and page count
     const [aiContext, document] = await Promise.all([
@@ -34,7 +57,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     const context = aiContext
-      ? getRelevantContext(aiContext.extractedText, pageNumber)
+      ? getRelevantContextForPages(aiContext.extractedText, pageNumbers)
       : "";
     const pageCount = document?.pageCount ?? 0;
 
@@ -46,9 +69,12 @@ export async function POST(req: NextRequest) {
         try {
           const messageStream = client.messages.stream({
             model: "claude-sonnet-4-5-20250929",
-            max_tokens: 1024,
-            system: buildChatSystemPrompt(context, pageCount, selectedText),
-            messages,
+            max_tokens: 2048,
+            system: buildVisionSystemPrompt(context, pageCount),
+            messages: messages.map((m) => ({
+              role: m.role,
+              content: m.content as string | Array<{ type: "text"; text: string } | { type: "image"; source: { type: "base64"; media_type: "image/png"; data: string } }>,
+            })),
           });
 
           messageStream.on("text", (textDelta) => {

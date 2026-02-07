@@ -106,3 +106,70 @@ Your role:
 Document context:
 ${context}`;
 }
+
+export function buildVisionSystemPrompt(context: string, pageCount: number): string {
+  return `You are a helpful AI assistant that analyzes content from PDF documents. The document has ${pageCount} pages.
+
+Your role:
+- Analyze screenshots from the PDF that the user shares with you
+- Provide clear, detailed explanations of what you see in the images
+- If the screenshot contains text, equations, diagrams, charts, or figures, explain them clearly
+- Use the document text context below to give accurate, well-informed answers
+- Be concise but thorough
+- If you're unsure about something, say so
+
+Document text context (for reference):
+${context}`;
+}
+
+/**
+ * Get relevant context around multiple pages, staying within maxChars.
+ * Distributes the budget across all referenced pages.
+ */
+export function getRelevantContextForPages(
+  extractedText: string,
+  pageNumbers: number[],
+  maxChars: number = 8000
+): string {
+  if (pageNumbers.length === 0) {
+    return getRelevantContext(extractedText, 1, maxChars);
+  }
+
+  const pages = parsePageText(extractedText);
+  if (pages.size === 0) return extractedText.substring(0, maxChars);
+
+  const result: { page: number; text: string }[] = [];
+  let charCount = 0;
+
+  // Include all referenced pages first
+  const uniquePages = Array.from(new Set(pageNumbers)).sort((a, b) => a - b);
+  for (const p of uniquePages) {
+    const text = pages.get(p);
+    if (!text) continue;
+    const entry = `--- Page ${p} ---\n${text}`;
+    if (charCount + entry.length > maxChars) break;
+    result.push({ page: p, text: entry });
+    charCount += entry.length;
+  }
+
+  // Expand around the first referenced page with remaining budget
+  const primaryPage = uniquePages[0];
+  const maxPage = Math.max(...Array.from(pages.keys()));
+  for (let offset = 1; offset <= maxPage; offset++) {
+    for (const delta of [-offset, offset]) {
+      const p = primaryPage + delta;
+      if (p < 1 || !pages.has(p)) continue;
+      if (result.some((r) => r.page === p)) continue;
+
+      const text = pages.get(p)!;
+      const entry = `--- Page ${p} ---\n${text}`;
+      if (charCount + entry.length > maxChars) continue;
+
+      result.push({ page: p, text: entry });
+      charCount += entry.length;
+    }
+  }
+
+  result.sort((a, b) => a.page - b.page);
+  return result.map((r) => r.text).join("\n\n");
+}
