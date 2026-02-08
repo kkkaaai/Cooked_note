@@ -12,7 +12,7 @@ describe("usePDFStore", () => {
     expect(state.numPages).toBe(0);
     expect(state.currentPage).toBe(1);
     expect(state.scale).toBe(1.0);
-    expect(state.viewMode).toBe("single");
+    expect(state.viewMode).toBe("continuous");
     expect(state.scrollTarget).toBeNull();
   });
 
@@ -108,7 +108,7 @@ describe("usePDFStore", () => {
     expect(state.numPages).toBe(0);
     expect(state.currentPage).toBe(1);
     expect(state.scale).toBe(1.0);
-    expect(state.viewMode).toBe("single");
+    expect(state.viewMode).toBe("continuous");
     expect(state.scrollTarget).toBeNull();
   });
 
@@ -137,6 +137,7 @@ describe("usePDFStore", () => {
     });
 
     it("setCurrentPage does not set scrollTarget in single mode", () => {
+      usePDFStore.getState().setViewMode("single");
       usePDFStore.getState().setCurrentPage(3);
       expect(usePDFStore.getState().scrollTarget).toBeNull();
     });

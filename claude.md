@@ -162,19 +162,25 @@ goodnotes-clone/
 │   │   │   ├── sign-in/page.tsx
 │   │   │   └── sign-up/page.tsx
 │   │   ├── (dashboard)/
-│   │   │   ├── dashboard/page.tsx
+│   │   │   ├── dashboard/
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── conversations/page.tsx
 │   │   │   ├── document/[id]/page.tsx
 │   │   │   └── layout.tsx
 │   │   ├── api/
 │   │   │   ├── documents/
 │   │   │   ├── annotations/
-│   │   │   └── ai/
+│   │   │   ├── ai/
+│   │   │   ├── folders/         (NEW)
+│   │   │   └── conversations/   (NEW)
 │   │   ├── layout.tsx
 │   │   └── page.tsx
 │   ├── components/
 │   │   ├── ui/ (shadcn)
 │   │   ├── pdf/
 │   │   ├── ai/
+│   │   ├── folders/     (NEW)
+│   │   ├── history/     (NEW)
 │   │   └── layout/
 │   ├── lib/
 │   │   ├── db.ts
@@ -184,6 +190,11 @@ goodnotes-clone/
 │   │   └── utils.ts
 │   ├── hooks/
 │   ├── stores/
+│   │   ├── pdf-store.ts
+│   │   ├── annotation-store.ts
+│   │   ├── ai-store.ts
+│   │   ├── folder-store.ts       (NEW)
+│   │   └── conversation-store.ts (NEW)
 │   ├── types/
 │   └── middleware.ts
 ├── prisma/
@@ -222,11 +233,18 @@ goodnotes-clone/
 - [x] Add streaming responses
 
 ### Phase 5: Polish & Testing (Week 4)
-- [ ] Use Playwright MCP for UX review
-- [ ] Implement loading states
-- [ ] Add error handling
+- [x] Use Playwright MCP for UX review
+- [x] Implement loading states
+- [x] Add error handling
 - [ ] Optimize performance
 - [ ] Deploy to Vercel
+
+### Phase 6: Extended Features
+- [x] Folder management system (create, rename, delete, nested, color-coded, drag-and-drop)
+- [x] LaTeX math rendering in AI responses (KaTeX + react-markdown + remark-math)
+- [x] Conversation persistence & history (save, list, reopen, badges on PDF pages)
+- [x] Conversation history page (/dashboard/conversations)
+- [x] Mobile responsive fixes for folder sidebar
 
 ## Technical Challenges & Solutions
 
@@ -291,15 +309,18 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: Phase 5 (Polish & Testing)
-- All Phase 1-4 features (auth, upload, PDF viewer, highlights, annotations, AI)
+Phase: Phase 6 (Extended Features) — complete
+- All Phase 1-5 features (auth, upload, PDF viewer, highlights, annotations, AI, continuous scroll)
+- **Folder Management**: Create/rename/delete/nest folders, color-code, drag-drop documents between folders, sidebar navigation
+- **LaTeX Math Rendering**: AI responses render math with KaTeX via react-markdown + remark-math + rehype-katex
+- **Conversation Persistence**: Save AI conversations, conversation history page, badges on PDF pages, reopen from history
 - **AI Screenshot Mode**: Draw rectangles on PDF → capture region screenshots → accumulate up to 5 → type prompt → Claude vision API
 - **Continuous Scroll**: Toggle between single-page and continuous scroll view modes (V key or toolbar button)
 - **Virtualized Rendering**: Only pages within +/-2 buffer of viewport are rendered; IntersectionObserver tracks visible pages
 - **Smart Context**: `getRelevantContextForPages()` sends referenced pages + adjacent pages to Claude
 - **SSE Streaming**: `/api/ai/chat` uses Server-Sent Events with vision content blocks
 - **Keyboard Shortcuts**: A (AI mode), V (view mode), H (highlight), Escape, +/- (zoom), arrows (navigate)
-- 195 tests passing across 16 test files
+- 229 tests passing across 19 test files
 - Build passes cleanly
 
 ## Decisions Log
@@ -337,3 +358,11 @@ Phase: Phase 5 (Polish & Testing)
 - 2026-02-07: `usePDFStore.setState({ currentPage })` used directly (not `setCurrentPage`) from observer to avoid setting scrollTarget
 - 2026-02-07: IntersectionObserver not in jsdom — mock with class (not vi.fn arrow) since it needs `new` constructor
 - 2026-02-07: `NodeListOf<Element>` can't be iterated with `for...of` in TS default target — use `Array.from()` first
+- 2026-02-08: Folder model uses self-referential relation `@relation("FolderNesting")` for parent/children nesting
+- 2026-02-08: Document.folderId uses `onDelete: SetNull` — deleting folder doesn't delete documents
+- 2026-02-08: Folder deletion reparents children to parent folder (or root) and moves documents to root
+- 2026-02-08: Conversation screenshots stored as JSON string in DB, parsed on client
+- 2026-02-08: LaTeX rendering uses `react-markdown` + `remark-math` + `rehype-katex` with `katex/dist/katex.min.css` import
+- 2026-02-08: Conversation reopen from history uses query params `?conversation={id}&page={num}` on document URL
+- 2026-02-08: Folder sidebar hidden on mobile (`hidden md:block`) — mobile nav uses shorter labels
+- 2026-02-08: `prisma db push` used instead of `prisma migrate dev` due to Supabase shadow database limitations

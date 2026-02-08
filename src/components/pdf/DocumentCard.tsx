@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FileText, MoreVertical, Trash2 } from "lucide-react";
+import { FileText, MoreVertical, Trash2, FolderInput } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,7 +9,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
+import { useFolderStore } from "@/stores/folder-store";
 import type { DocumentMeta } from "@/types";
 
 interface DocumentCardProps {
@@ -19,6 +23,8 @@ interface DocumentCardProps {
 
 export function DocumentCard({ document, onDelete }: DocumentCardProps) {
   const router = useRouter();
+  const folders = useFolderStore((s) => s.folders);
+  const moveDocument = useFolderStore((s) => s.moveDocument);
 
   const handleClick = () => {
     router.push(`/document/${document.id}`);
@@ -29,6 +35,11 @@ export function DocumentCard({ document, onDelete }: DocumentCardProps) {
     if (window.confirm(`Delete "${document.title}"? This cannot be undone.`)) {
       onDelete(document.id);
     }
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("application/document-id", document.id);
+    e.dataTransfer.effectAllowed = "move";
   };
 
   const formatDate = (dateStr: string) => {
@@ -50,6 +61,8 @@ export function DocumentCard({ document, onDelete }: DocumentCardProps) {
     <Card
       className="group cursor-pointer transition-shadow hover:shadow-md"
       onClick={handleClick}
+      draggable
+      onDragStart={handleDragStart}
     >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
@@ -73,6 +86,39 @@ export function DocumentCard({ document, onDelete }: DocumentCardProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {folders.length > 0 && (
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger onClick={(e) => e.stopPropagation()}>
+                        <FolderInput className="mr-2 h-4 w-4" />
+                        Move to folder
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveDocument(document.id, null);
+                          }}
+                        >
+                          No folder
+                        </DropdownMenuItem>
+                        {folders.map((f) => (
+                          <DropdownMenuItem
+                            key={f.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              moveDocument(document.id, f.id);
+                            }}
+                          >
+                            <span
+                              className="mr-2 inline-block h-3 w-3 rounded-full"
+                              style={{ backgroundColor: f.color }}
+                            />
+                            {f.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  )}
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onClick={handleDelete}

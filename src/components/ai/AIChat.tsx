@@ -6,6 +6,7 @@ import { useAIChat } from "@/hooks/use-ai-chat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Loader2, AlertCircle, X } from "lucide-react";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 import type { Screenshot } from "@/types";
 
 function MessageBubble({
@@ -40,7 +41,13 @@ function MessageBubble({
             ))}
           </div>
         )}
-        <div className="whitespace-pre-wrap">{content}</div>
+        {isUser ? (
+          <div className="whitespace-pre-wrap">{content}</div>
+        ) : (
+          <div className="prose-sm max-w-none">
+            <MarkdownRenderer content={content} />
+          </div>
+        )}
         {isStreaming && (
           <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-foreground/70" />
         )}
@@ -77,46 +84,50 @@ export function AIChat() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Messages list */}
-      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-3">
-        {messages.length === 0 && !isStreaming && (
-          <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-            <p className="text-sm">
-              Draw a region on the PDF to capture a screenshot, then ask your question here.
-            </p>
+      <div className="flex-1 overflow-y-auto px-4 py-3">
+        <div className="flex min-h-full flex-col justify-end">
+          <div className="space-y-4">
+            {messages.length === 0 && !isStreaming && (
+              <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                <p className="text-sm">
+                  Draw a region on the PDF to capture a screenshot, then ask your question here.
+                </p>
+              </div>
+            )}
+
+            {messages.map((msg, i) => (
+              <MessageBubble
+                key={i}
+                role={msg.role}
+                content={msg.content}
+                screenshots={msg.screenshots}
+              />
+            ))}
+
+            {/* Streaming message (in progress) */}
+            {isStreaming && streamingText && (
+              <MessageBubble role="assistant" content={streamingText} isStreaming />
+            )}
+
+            {/* Loading indicator (before first text arrives) */}
+            {isStreaming && !streamingText && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Thinking...</span>
+              </div>
+            )}
+
+            {/* Error display */}
+            {error && (
+              <div className="flex items-center gap-2 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
           </div>
-        )}
-
-        {messages.map((msg, i) => (
-          <MessageBubble
-            key={i}
-            role={msg.role}
-            content={msg.content}
-            screenshots={msg.screenshots}
-          />
-        ))}
-
-        {/* Streaming message (in progress) */}
-        {isStreaming && streamingText && (
-          <MessageBubble role="assistant" content={streamingText} isStreaming />
-        )}
-
-        {/* Loading indicator (before first text arrives) */}
-        {isStreaming && !streamingText && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">Thinking...</span>
-          </div>
-        )}
-
-        {/* Error display */}
-        {error && (
-          <div className="flex items-center gap-2 text-sm text-destructive">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Input area */}

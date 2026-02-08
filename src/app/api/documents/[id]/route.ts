@@ -50,9 +50,23 @@ export async function PATCH(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    // Check for JSON body (optional — touch requests send no body)
+    let data: Record<string, unknown> = { lastOpenedAt: new Date() };
+    try {
+      const body = await req.json();
+      if (body.folderId !== undefined) {
+        data = { ...data, folderId: body.folderId };
+      }
+      if (body.title !== undefined) {
+        data = { ...data, title: body.title };
+      }
+    } catch {
+      // No body — just touch lastOpenedAt
+    }
+
     const document = await db.document.update({
       where: { id: params.id },
-      data: { lastOpenedAt: new Date() },
+      data,
     });
 
     return NextResponse.json(document);

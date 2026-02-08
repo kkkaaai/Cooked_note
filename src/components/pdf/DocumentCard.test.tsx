@@ -19,6 +19,7 @@ const mockDocument: DocumentMeta = {
   pageCount: 15,
   uploadedAt: "2026-01-15T00:00:00.000Z",
   lastOpenedAt: "2026-01-20T00:00:00.000Z",
+  folderId: null,
 };
 
 describe("DocumentCard", () => {

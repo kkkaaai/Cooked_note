@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { usePDFStore } from "@/stores/pdf-store";
 import { HighlightLayer } from "./HighlightLayer";
 import { RegionSelectOverlay } from "./RegionSelectOverlay";
+import { ConversationBadge } from "@/components/ai/ConversationBadge";
 import type { NormalizedRect } from "@/types";
 
 const PAGE_BUFFER = 2;
@@ -20,6 +21,7 @@ interface ContinuousScrollViewProps {
   isSelecting: boolean;
   selectionRect: NormalizedRect | null;
   activeRegionPage: number | null;
+  documentId?: string;
 }
 
 export function ContinuousScrollView({
@@ -30,6 +32,7 @@ export function ContinuousScrollView({
   isSelecting,
   selectionRect,
   activeRegionPage,
+  documentId,
 }: ContinuousScrollViewProps) {
   const pageDimensions = useRef<Map<number, { width: number; height: number }>>(new Map());
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -201,6 +204,12 @@ export function ContinuousScrollView({
                 : undefined
             }
           >
+            {documentId && isInRange && (
+              <ConversationBadge
+                documentId={documentId}
+                pageNumber={pageNum}
+              />
+            )}
             {isInRange ? (
               <Page
                 pageNumber={pageNum}

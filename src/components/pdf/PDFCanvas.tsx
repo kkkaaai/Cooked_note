@@ -16,6 +16,8 @@ import { HighlightLayer } from "./HighlightLayer";
 import { RegionSelectOverlay } from "./RegionSelectOverlay";
 import { ContinuousScrollView } from "./ContinuousScrollView";
 import { SelectionPopup } from "./SelectionPopup";
+import { ConversationBadge } from "@/components/ai/ConversationBadge";
+import { useConversationStore } from "@/stores/conversation-store";
 import {
   fetchAnnotations,
   createAnnotation as createAnnotationApi,
@@ -118,7 +120,9 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
     getPageFromPoint: viewMode === "continuous" ? getPageFromPoint : undefined,
   });
 
-  // Fetch annotations on document load
+  const fetchConversations = useConversationStore((s) => s.fetchConversations);
+
+  // Fetch annotations and conversations on document load
   useEffect(() => {
     if (!documentId) return;
     fetchAnnotations(documentId)
@@ -126,8 +130,9 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
       .catch((err) => {
         console.error("Failed to load annotations:", err);
       });
+    fetchConversations(documentId);
     return () => resetAnnotations();
-  }, [documentId, setAnnotations, resetAnnotations]);
+  }, [documentId, setAnnotations, resetAnnotations, fetchConversations]);
 
   // Auto-highlight in highlight mode
   useEffect(() => {
@@ -231,24 +236,32 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
         }
       >
         {viewMode === "single" && numPages > 0 && (
-          <Page
-            pageNumber={currentPage}
-            scale={scale}
-            loading={
-              <div className="flex h-[800px] w-[600px] items-center justify-center bg-white shadow-lg">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            }
-            className="shadow-lg"
-          >
-            <HighlightLayer pageNumber={currentPage} />
-            {isAIMode && (
-              <RegionSelectOverlay
-                isSelecting={isSelecting}
-                selectionRect={selectionRect}
+          <div className="relative">
+            {documentId && (
+              <ConversationBadge
+                documentId={documentId}
+                pageNumber={currentPage}
               />
             )}
-          </Page>
+            <Page
+              pageNumber={currentPage}
+              scale={scale}
+              loading={
+                <div className="flex h-[800px] w-[600px] items-center justify-center bg-white shadow-lg">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              }
+              className="shadow-lg"
+            >
+              <HighlightLayer pageNumber={currentPage} />
+              {isAIMode && (
+                <RegionSelectOverlay
+                  isSelecting={isSelecting}
+                  selectionRect={selectionRect}
+                />
+              )}
+            </Page>
+          </div>
         )}
         {viewMode === "continuous" && numPages > 0 && (
           <ContinuousScrollView
@@ -259,6 +272,7 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
             isSelecting={isSelecting}
             selectionRect={selectionRect}
             activeRegionPage={activeRegionPage}
+            documentId={documentId || undefined}
           />
         )}
       </Document>

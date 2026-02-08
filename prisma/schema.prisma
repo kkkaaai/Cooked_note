@@ -15,13 +15,16 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  documents   Document[]
-  annotations Annotation[]
+  documents     Document[]
+  annotations   Annotation[]
+  folders       Folder[]
+  conversations Conversation[]
 }
 
 model Document {
   id           String   @id @default(uuid())
   userId       String
+  folderId     String?
   title        String
   fileName     String
   fileUrl      String
@@ -30,11 +33,14 @@ model Document {
   uploadedAt   DateTime @default(now())
   lastOpenedAt DateTime @default(now())
 
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  annotations Annotation[]
-  aiContext   AIContext?
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder        Folder?        @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  annotations   Annotation[]
+  aiContext     AIContext?
+  conversations Conversation[]
 
   @@index([userId])
+  @@index([folderId])
 }
 
 model Annotation {
@@ -65,4 +71,53 @@ model AIContext {
   createdAt     DateTime @default(now())
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model Folder {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  color     String   @default("#3B82F6") // blue-500
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent    Folder?    @relation("FolderNesting", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Folder[]   @relation("FolderNesting")
+  documents Document[]
+
+  @@index([userId])
+  @@index([parentId])
+}
+
+model Conversation {
+  id          String   @id @default(uuid())
+  userId      String
+  documentId  String
+  pageNumber  Int
+  title       String
+  screenshots Json     @default("[]") // array of {base64, pageNumber, region}
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([userId])
+  @@index([documentId])
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  role           String   // 'user' or 'assistant'
+  content        String   @db.Text
+  screenshots    Json?    // optional screenshots for user messages
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
 }

@@ -108,4 +108,81 @@ export interface DocumentMeta {
   pageCount: number;
   uploadedAt: string;
   lastOpenedAt: string;
+  folderId: string | null;
+}
+
+// Folder types
+export interface FolderColor {
+  name: string;
+  value: string;
+}
+
+export const FOLDER_COLORS: FolderColor[] = [
+  { name: "Blue", value: "#3B82F6" },
+  { name: "Red", value: "#EF4444" },
+  { name: "Green", value: "#22C55E" },
+  { name: "Yellow", value: "#EAB308" },
+  { name: "Purple", value: "#A855F7" },
+  { name: "Pink", value: "#EC4899" },
+  { name: "Orange", value: "#F97316" },
+  { name: "Gray", value: "#6B7280" },
+];
+
+export interface Folder {
+  id: string;
+  userId: string;
+  name: string;
+  color: string;
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  children?: Folder[];
+  _count?: { documents: number };
+}
+
+export interface CreateFolderInput {
+  name: string;
+  color?: string;
+  parentId?: string;
+}
+
+export interface UpdateFolderInput {
+  name?: string;
+  color?: string;
+  parentId?: string | null;
+}
+
+// Conversation types
+export interface ConversationMeta {
+  id: string;
+  userId: string;
+  documentId: string;
+  pageNumber: number;
+  title: string;
+  screenshots: Screenshot[];
+  createdAt: string;
+  updatedAt: string;
+  document?: { title: string; fileName: string };
+  _count?: { messages: number };
+}
+
+export interface ConversationMessage {
+  id: string;
+  conversationId: string;
+  role: "user" | "assistant";
+  content: string;
+  screenshots: Screenshot[] | null;
+  createdAt: string;
+}
+
+export interface ConversationWithMessages extends ConversationMeta {
+  messages: ConversationMessage[];
+}
+
+export interface CreateConversationInput {
+  documentId: string;
+  pageNumber: number;
+  title: string;
+  screenshots: Screenshot[];
+  messages: { role: "user" | "assistant"; content: string; screenshots?: Screenshot[] }[];
 }

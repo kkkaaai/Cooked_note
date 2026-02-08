@@ -35,7 +35,7 @@ export const usePDFStore = create<PDFStore>((set, get) => ({
   numPages: 0,
   currentPage: 1,
   scale: 1.0,
-  viewMode: "single",
+  viewMode: "continuous",
   scrollTarget: null,
 
   setDocument: (id, numPages) =>
@@ -100,7 +100,7 @@ export const usePDFStore = create<PDFStore>((set, get) => ({
       numPages: 0,
       currentPage: 1,
       scale: 1.0,
-      viewMode: "single",
+      viewMode: "continuous",
       scrollTarget: null,
     }),
 }));
