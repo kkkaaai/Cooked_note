@@ -6,7 +6,7 @@ import {
   buildChatSystemPrompt,
   buildVisionSystemPrompt,
   getRelevantContextForPages,
-} from "./ai";
+} from "./ai-prompts";
 
 describe("parsePageText", () => {
   it("parses single page text", () => {

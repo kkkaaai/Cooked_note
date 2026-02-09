@@ -1,4 +1,4 @@
-import type { NormalizedRect } from "@/types";
+import type { NormalizedRect } from "@cookednote/shared/types";
 
 const MAX_DIMENSION = 1200;
 

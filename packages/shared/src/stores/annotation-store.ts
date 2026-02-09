@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import type { Annotation, HighlightColor } from "@/types";
-import { HIGHLIGHT_COLORS } from "@/types";
+import type { Annotation, HighlightColor } from "../types";
+import { HIGHLIGHT_COLORS } from "../types";
 
 // Callback to notify when highlight mode is activated (used by ai-store to deactivate AI mode)
 let onHighlightModeActivated: (() => void) | null = null;

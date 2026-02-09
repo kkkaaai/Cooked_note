@@ -6,9 +6,9 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import "@/lib/pdf-worker";
 import { Loader2 } from "lucide-react";
-import { usePDFStore } from "@/stores/pdf-store";
-import { useAnnotationStore } from "@/stores/annotation-store";
-import { useAIStore } from "@/stores/ai-store";
+import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
+import { useAnnotationStore } from "@cookednote/shared/stores/annotation-store";
+import { useAIStore } from "@cookednote/shared/stores/ai-store";
 import { useTextSelection } from "@/hooks/use-text-selection";
 import { useRegionSelect } from "@/hooks/use-region-select";
 import { captureRegion } from "@/lib/screenshot";
@@ -22,7 +22,7 @@ import {
   fetchAnnotations,
   createAnnotation as createAnnotationApi,
 } from "@/lib/annotations";
-import type { HighlightColor, Screenshot } from "@/types";
+import type { HighlightColor, Screenshot } from "@cookednote/shared/types";
 import { useToast } from "@/hooks/use-toast";
 
 interface PDFCanvasProps {
@@ -75,7 +75,7 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
 
   // Region selection for AI mode (screenshot capture)
   const handleRegionSelected = useCallback(
-    ({ region, pageNumber }: { region: import("@/types").NormalizedRect; pageNumber: number }) => {
+    ({ region, pageNumber }: { region: import("@cookednote/shared/types").NormalizedRect; pageNumber: number }) => {
       let pageEl: HTMLElement | null;
 
       if (viewMode === "continuous") {

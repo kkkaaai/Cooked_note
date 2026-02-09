@@ -1,6 +1,6 @@
 "use client";
 
-import type { NormalizedRect } from "@/types";
+import type { NormalizedRect } from "@cookednote/shared/types";
 
 interface RegionSelectOverlayProps {
   isSelecting: boolean;

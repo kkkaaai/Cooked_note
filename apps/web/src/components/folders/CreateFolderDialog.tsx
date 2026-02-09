@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useFolderStore } from "@/stores/folder-store";
-import { FOLDER_COLORS } from "@/types";
+import { FOLDER_COLORS } from "@cookednote/shared/types";
 
 interface CreateFolderDialogProps {
   parentId?: string;

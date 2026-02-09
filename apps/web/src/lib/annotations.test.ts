@@ -5,7 +5,7 @@ import {
   updateAnnotation,
   deleteAnnotation,
 } from "./annotations";
-import type { CreateAnnotationInput, UpdateAnnotationInput } from "@/types";
+import type { CreateAnnotationInput, UpdateAnnotationInput } from "@cookednote/shared/types";
 
 const mockFetch = vi.fn();
 globalThis.fetch = mockFetch;

@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Page } from "react-pdf";
 import { Loader2 } from "lucide-react";
-import { usePDFStore } from "@/stores/pdf-store";
+import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
 import { HighlightLayer } from "./HighlightLayer";
 import { RegionSelectOverlay } from "./RegionSelectOverlay";
 import { ConversationBadge } from "@/components/ai/ConversationBadge";
-import type { NormalizedRect } from "@/types";
+import type { NormalizedRect } from "@cookednote/shared/types";
 
 const PAGE_BUFFER = 2;
 const DEFAULT_PAGE_HEIGHT = 800;

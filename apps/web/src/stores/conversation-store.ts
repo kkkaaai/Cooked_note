@@ -4,7 +4,7 @@ import type {
   ConversationWithMessages,
   CreateConversationInput,
   Screenshot,
-} from "@/types";
+} from "@cookednote/shared/types";
 
 interface ConversationState {
   conversations: ConversationMeta[];

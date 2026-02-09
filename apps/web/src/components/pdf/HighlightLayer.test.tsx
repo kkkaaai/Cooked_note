@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
 import { HighlightLayer } from "./HighlightLayer";
-import { useAnnotationStore } from "@/stores/annotation-store";
-import type { Annotation } from "@/types";
+import { useAnnotationStore } from "@cookednote/shared/stores/annotation-store";
+import type { Annotation } from "@cookednote/shared/types";
 
 function makeAnnotation(overrides: Partial<Annotation> = {}): Annotation {
   return {

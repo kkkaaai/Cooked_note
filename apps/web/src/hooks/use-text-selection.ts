@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { NormalizedRect } from "@/types";
+import type { NormalizedRect } from "@cookednote/shared/types";
 
 export interface TextSelectionResult {
   selectedText: string;

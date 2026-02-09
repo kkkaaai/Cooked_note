@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { NormalizedRect } from "@/types";
+import type { NormalizedRect } from "@cookednote/shared/types";
 
 const MIN_SIZE_PX = 10;
 

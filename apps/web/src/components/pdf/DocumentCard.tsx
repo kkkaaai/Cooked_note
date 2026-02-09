@@ -14,7 +14,7 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { useFolderStore } from "@/stores/folder-store";
-import type { DocumentMeta } from "@/types";
+import type { DocumentMeta } from "@cookednote/shared/types";
 
 interface DocumentCardProps {
   document: DocumentMeta;

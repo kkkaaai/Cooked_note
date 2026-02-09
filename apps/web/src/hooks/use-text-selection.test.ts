@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { mergeAdjacentRects } from "./use-text-selection";
-import type { NormalizedRect } from "@/types";
+import type { NormalizedRect } from "@cookednote/shared/types";
 
 describe("mergeAdjacentRects", () => {
   it("returns empty array for empty input", () => {

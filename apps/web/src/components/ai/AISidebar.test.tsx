@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { AISidebar } from "./AISidebar";
-import { useAIStore } from "@/stores/ai-store";
-import type { Screenshot } from "@/types";
+import { useAIStore } from "@cookednote/shared/stores/ai-store";
+import type { Screenshot } from "@cookednote/shared/types";
 
 function makeScreenshot(overrides: Partial<Screenshot> = {}): Screenshot {
   return {

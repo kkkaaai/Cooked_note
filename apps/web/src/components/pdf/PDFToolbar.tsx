@@ -26,10 +26,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { usePDFStore } from "@/stores/pdf-store";
-import { useAnnotationStore } from "@/stores/annotation-store";
-import { useAIStore } from "@/stores/ai-store";
-import { HIGHLIGHT_COLORS } from "@/types";
+import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
+import { useAnnotationStore } from "@cookednote/shared/stores/annotation-store";
+import { useAIStore } from "@cookednote/shared/stores/ai-store";
+import { HIGHLIGHT_COLORS } from "@cookednote/shared/types";
 import { deleteAnnotation as deleteAnnotationApi } from "@/lib/annotations";
 import { useToast } from "@/hooks/use-toast";
 

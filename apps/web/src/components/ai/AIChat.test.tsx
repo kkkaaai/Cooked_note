@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { AIChat } from "./AIChat";
-import { useAIStore } from "@/stores/ai-store";
-import type { Screenshot } from "@/types";
+import { useAIStore } from "@cookednote/shared/stores/ai-store";
+import type { Screenshot } from "@cookednote/shared/types";
 
 // Mock the useAIChat hook
 const mockSendMessage = vi.fn();

@@ -3,7 +3,7 @@ import {
   useAnnotationStore,
   selectPageAnnotations,
 } from "./annotation-store";
-import { HIGHLIGHT_COLORS, type Annotation } from "@/types";
+import { HIGHLIGHT_COLORS, type Annotation } from "../types";
 
 function makeAnnotation(overrides: Partial<Annotation> = {}): Annotation {
   return {

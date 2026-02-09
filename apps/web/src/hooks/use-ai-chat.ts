@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { useAIStore } from "@/stores/ai-store";
+import { useAIStore } from "@cookednote/shared/stores/ai-store";
 import { streamChat } from "@/lib/ai-client";
 import { dataUrlToBase64 } from "@/lib/screenshot";
-import type { AIMessage, ContentBlock, Screenshot } from "@/types";
+import type { AIMessage, ContentBlock, Screenshot } from "@cookednote/shared/types";
 
 export function useAIChat() {
   const abortRef = useRef<AbortController | null>(null);

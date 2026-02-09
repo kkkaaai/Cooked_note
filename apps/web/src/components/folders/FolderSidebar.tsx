@@ -21,8 +21,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useFolderStore } from "@/stores/folder-store";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { FOLDER_COLORS } from "@/types";
-import type { Folder } from "@/types";
+import { FOLDER_COLORS } from "@cookednote/shared/types";
+import type { Folder } from "@cookednote/shared/types";
 
 function buildTree(folders: Folder[]): Folder[] {
   const map = new Map<string, Folder>();

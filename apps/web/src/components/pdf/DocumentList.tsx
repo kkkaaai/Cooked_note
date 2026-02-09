@@ -7,7 +7,7 @@ import { DocumentCard } from "@/components/pdf/DocumentCard";
 import { FolderSidebar } from "@/components/folders/FolderSidebar";
 import { useToast } from "@/hooks/use-toast";
 import { useFolderStore } from "@/stores/folder-store";
-import type { DocumentMeta } from "@/types";
+import type { DocumentMeta } from "@cookednote/shared/types";
 
 interface DocumentListProps {
   userName: string;

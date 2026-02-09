@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useAIStore } from "@/stores/ai-store";
+import { useAIStore } from "@cookednote/shared/stores/ai-store";
 import { useConversationStore } from "@/stores/conversation-store";
-import { usePDFStore } from "@/stores/pdf-store";
+import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
 import { AIChat } from "./AIChat";
 import { Button } from "@/components/ui/button";
 import { X, Sparkles, Save, History, ArrowLeft } from "lucide-react";
 import { ConversationHistoryPanel } from "@/components/history/ConversationHistoryPanel";
-import type { Screenshot, ConversationWithMessages } from "@/types";
+import type { Screenshot, ConversationWithMessages } from "@cookednote/shared/types";
 
 const MIN_WIDTH = 320;
 const MAX_WIDTH = 800;

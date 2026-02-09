@@ -1,13 +1,13 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { useAIStore } from "@/stores/ai-store";
+import { useAIStore } from "@cookednote/shared/stores/ai-store";
 import { useAIChat } from "@/hooks/use-ai-chat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Loader2, AlertCircle, X } from "lucide-react";
 import { MarkdownRenderer } from "./MarkdownRenderer";
-import type { Screenshot } from "@/types";
+import type { Screenshot } from "@cookednote/shared/types";
 
 function MessageBubble({
   role,

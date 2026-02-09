@@ -6,7 +6,7 @@ import { Loader2, MessageSquare, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import type { ConversationMeta, Screenshot } from "@/types";
+import type { ConversationMeta, Screenshot } from "@cookednote/shared/types";
 
 export default function ConversationsPage() {
   const router = useRouter();

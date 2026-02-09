@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render } from "@testing-library/react";
 import { ContinuousScrollView } from "./ContinuousScrollView";
-import { usePDFStore } from "@/stores/pdf-store";
+import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
 
 // Mock IntersectionObserver (not available in jsdom)
 class MockIntersectionObserver {

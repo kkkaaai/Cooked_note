@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Folder, CreateFolderInput, UpdateFolderInput } from "@/types";
+import type { Folder, CreateFolderInput, UpdateFolderInput } from "@cookednote/shared/types";
 
 interface FolderState {
   folders: Folder[];

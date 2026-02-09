@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { useAnnotationStore } from "@/stores/annotation-store";
-import type { Annotation } from "@/types";
+import { useAnnotationStore } from "@cookednote/shared/stores/annotation-store";
+import type { Annotation } from "@cookednote/shared/types";
 
 interface HighlightLayerProps {
   pageNumber: number;

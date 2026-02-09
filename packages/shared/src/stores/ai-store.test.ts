@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useAIStore } from "./ai-store";
 import { useAnnotationStore } from "./annotation-store";
-import type { Screenshot } from "@/types";
+import type { Screenshot } from "../types";
 
 function makeScreenshot(overrides: Partial<Screenshot> = {}): Screenshot {
   return {

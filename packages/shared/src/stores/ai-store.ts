@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import type { AIMessage, Screenshot } from "@/types";
-import { useAnnotationStore, setOnHighlightModeActivated } from "@/stores/annotation-store";
+import type { AIMessage, Screenshot } from "../types";
+import { useAnnotationStore, setOnHighlightModeActivated } from "./annotation-store";
 
 const MAX_SCREENSHOTS = 5;
 

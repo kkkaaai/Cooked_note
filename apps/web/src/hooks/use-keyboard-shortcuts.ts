@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePDFStore } from "@/stores/pdf-store";
-import { useAnnotationStore } from "@/stores/annotation-store";
-import { useAIStore } from "@/stores/ai-store";
+import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
+import { useAnnotationStore } from "@cookednote/shared/stores/annotation-store";
+import { useAIStore } from "@cookednote/shared/stores/ai-store";
 import { deleteAnnotation as deleteAnnotationApi } from "@/lib/annotations";
 
 export function useKeyboardShortcuts() {

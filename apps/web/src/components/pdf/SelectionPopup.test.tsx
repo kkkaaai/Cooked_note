@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SelectionPopup } from "./SelectionPopup";
-import { HIGHLIGHT_COLORS } from "@/types";
+import { HIGHLIGHT_COLORS } from "@cookednote/shared/types";
 
 describe("SelectionPopup", () => {
   const defaultProps = {

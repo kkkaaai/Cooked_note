@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { HIGHLIGHT_COLORS, type HighlightColor } from "@/types";
+import { HIGHLIGHT_COLORS, type HighlightColor } from "@cookednote/shared/types";
 
 interface SelectionPopupProps {
   position: { x: number; y: number };

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DocumentCard } from "./DocumentCard";
-import type { DocumentMeta } from "@/types";
+import type { DocumentMeta } from "@cookednote/shared/types";
 
 // Mock next/navigation
 const mockPush = vi.fn();

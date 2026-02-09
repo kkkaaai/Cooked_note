@@ -1,4 +1,4 @@
-import type { Annotation, CreateAnnotationInput, UpdateAnnotationInput } from "@/types";
+import type { Annotation, CreateAnnotationInput, UpdateAnnotationInput } from "@cookednote/shared/types";
 
 export async function fetchAnnotations(documentId: string): Promise<Annotation[]> {
   const res = await fetch(`/api/annotations?documentId=${documentId}`);

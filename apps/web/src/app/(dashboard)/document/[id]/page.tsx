@@ -6,8 +6,8 @@ import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { PDFToolbar } from "@/components/pdf/PDFToolbar";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
-import { usePDFStore } from "@/stores/pdf-store";
-import { useAIStore } from "@/stores/ai-store";
+import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
+import { useAIStore } from "@cookednote/shared/stores/ai-store";
 import { useConversationStore } from "@/stores/conversation-store";
 
 const PDFCanvas = dynamic(
@@ -26,7 +26,7 @@ const AISidebar = dynamic(
   () => import("@/components/ai/AISidebar").then((mod) => mod.AISidebar),
   { ssr: false }
 );
-import type { DocumentMeta } from "@/types";
+import type { DocumentMeta } from "@cookednote/shared/types";
 
 export default function DocumentPage() {
   const params = useParams<{ id: string }>();

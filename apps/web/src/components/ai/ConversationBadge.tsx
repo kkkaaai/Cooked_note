@@ -3,8 +3,8 @@
 import { useMemo } from "react";
 import { MessageSquare } from "lucide-react";
 import { useConversationStore } from "@/stores/conversation-store";
-import { useAIStore } from "@/stores/ai-store";
-import type { ConversationWithMessages } from "@/types";
+import { useAIStore } from "@cookednote/shared/stores/ai-store";
+import type { ConversationWithMessages } from "@cookednote/shared/types";
 
 interface ConversationBadgeProps {
   documentId: string;

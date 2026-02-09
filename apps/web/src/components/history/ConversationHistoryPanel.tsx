@@ -5,7 +5,7 @@ import { useConversationStore } from "@/stores/conversation-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, MessageSquare, Trash2, Search } from "lucide-react";
-import type { ConversationMeta, ConversationWithMessages } from "@/types";
+import type { ConversationMeta, ConversationWithMessages } from "@cookednote/shared/types";
 
 interface ConversationHistoryPanelProps {
   documentId: string | null;

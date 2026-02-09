@@ -1,4 +1,4 @@
-import type { AIMessage } from "@/types";
+import type { AIMessage } from "@cookednote/shared/types";
 
 export interface ChatParams {
   documentId: string;
