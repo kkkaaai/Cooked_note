@@ -15,17 +15,17 @@ This ensures the next Claude Code session can pick up exactly where we left off.
 
 ### 1. TypeScript Type Check
 ```bash
-npm run typecheck
+pnpm run typecheck
 ```
-- Runs `tsc --noEmit` across the entire codebase
+- Runs `tsc --noEmit` across all workspaces via Turbo
 - Catches type errors, missing imports, incorrect function signatures
 - **Must pass with zero errors** before moving on
 
 ### 2. Unit Tests
 ```bash
-npm run test
+pnpm run test
 ```
-- Runs Vitest on all `*.test.{ts,tsx}` files in `src/`
+- Runs Vitest across all workspaces (shared + web) via Turbo
 - **After implementing a feature, write tests for it** — cover:
   - Utility/library functions (validation, transformations, helpers)
   - API route handlers (request/response, error cases)
@@ -36,14 +36,14 @@ npm run test
 
 ### 3. Build Check (periodic)
 ```bash
-npm run build
+pnpm run build
 ```
 - Run after completing a full feature (not every small change)
 - Catches Next.js-specific issues (server/client boundaries, dynamic imports)
 
 ### Workflow Summary
 ```
-Implement feature → Write tests → npm run typecheck → npm run test → (npm run build if full feature)
+Implement feature → Write tests → pnpm run typecheck → pnpm run test → (pnpm run build if full feature)
 ```
 If any check fails, fix the issue before continuing to the next task.
 
@@ -51,8 +51,9 @@ If any check fails, fix the issue before continuing to the next task.
 - **Test Runner**: Vitest (v4+)
 - **Component Testing**: @testing-library/react + @testing-library/jest-dom
 - **Environment**: jsdom
-- **Config**: `vitest.config.ts` at project root
-- **Setup**: `src/test/setup.ts` (loads jest-dom matchers)
+- **Shared config**: `packages/shared/vitest.config.ts`
+- **Web config**: `apps/web/vitest.config.ts`
+- **Web setup**: `apps/web/src/test/setup.ts` (loads jest-dom matchers)
 
 ## Project Vision
 An intelligent PDF annotation tool combining the smooth UX of GoodNotes with AI-powered contextual explanations. Users can upload PDFs, highlight text with drag-and-drop, and get instant AI explanations of selected content with full document context awareness.
@@ -153,56 +154,35 @@ An intelligent PDF annotation tool combining the smooth UX of GoodNotes with AI-
 - Inline error messages
 - Encouraging empty states
 
-## File Structure
+## File Structure (Turborepo Monorepo)
 ```
 goodnotes-clone/
-├── src/
-│   ├── app/
-│   │   ├── (auth)/
-│   │   │   ├── sign-in/page.tsx
-│   │   │   └── sign-up/page.tsx
-│   │   ├── (dashboard)/
-│   │   │   ├── dashboard/
-│   │   │   │   ├── page.tsx
-│   │   │   │   └── conversations/page.tsx
-│   │   │   ├── document/[id]/page.tsx
-│   │   │   └── layout.tsx
-│   │   ├── api/
-│   │   │   ├── documents/
-│   │   │   ├── annotations/
-│   │   │   ├── ai/
-│   │   │   ├── folders/         (NEW)
-│   │   │   └── conversations/   (NEW)
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   ├── components/
-│   │   ├── ui/ (shadcn)
-│   │   ├── pdf/
-│   │   ├── ai/
-│   │   ├── folders/     (NEW)
-│   │   ├── history/     (NEW)
-│   │   └── layout/
-│   ├── lib/
-│   │   ├── db.ts
-│   │   ├── auth.ts
-│   │   ├── pdf.ts
-│   │   ├── ai.ts
-│   │   └── utils.ts
-│   ├── hooks/
-│   ├── stores/
-│   │   ├── pdf-store.ts
-│   │   ├── annotation-store.ts
-│   │   ├── ai-store.ts
-│   │   ├── folder-store.ts       (NEW)
-│   │   └── conversation-store.ts (NEW)
-│   ├── types/
-│   └── middleware.ts
-├── prisma/
-│   └── schema.prisma
-├── commands/
-├── docs/
+├── apps/web/                    # Next.js web app
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── (auth)/sign-in, sign-up
+│   │   │   ├── (dashboard)/dashboard, document/[id]
+│   │   │   └── api/ (documents, annotations, ai, folders, conversations)
+│   │   ├── components/ (ui/, pdf/, ai/, folders/, history/, layout/)
+│   │   ├── lib/ (db, auth, pdf, ai, ai-client, annotations, screenshot, storage)
+│   │   ├── hooks/ (use-ai-chat, use-keyboard-shortcuts, use-region-select, use-text-selection, use-toast)
+│   │   ├── stores/ (folder-store, conversation-store)
+│   │   └── middleware.ts
+│   ├── prisma/ (schema.prisma, migrations/)
+│   ├── public/ (pdf.worker.min.mjs)
+│   ├── next.config.mjs, tailwind.config.ts, vitest.config.ts
+│   └── package.json (@cookednote/web)
+├── packages/shared/             # Cross-platform business logic
+│   └── src/
+│       ├── types/index.ts       # All TypeScript interfaces and constants
+│       ├── stores/              # pdf-store, annotation-store, ai-store (+tests)
+│       └── lib/                 # utils (cn), ai-prompts (pure prompt builders)
+├── turbo.json
+├── pnpm-workspace.yaml
+├── tsconfig.json                # Base TS config
+├── package.json                 # Root workspace (cookednote)
 ├── claude.md
-└── .env
+└── commands/, docs/
 ```
 
 ## Development Phases
@@ -309,19 +289,15 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: Phase 6 (Extended Features) — complete
-- All Phase 1-5 features (auth, upload, PDF viewer, highlights, annotations, AI, continuous scroll)
-- **Folder Management**: Create/rename/delete/nest folders, color-code, drag-drop documents between folders, sidebar navigation
-- **LaTeX Math Rendering**: AI responses render math with KaTeX via react-markdown + remark-math + rehype-katex
-- **Conversation Persistence**: Save AI conversations, conversation history page, badges on PDF pages, reopen from history
-- **AI Screenshot Mode**: Draw rectangles on PDF → capture region screenshots → accumulate up to 5 → type prompt → Claude vision API
-- **Continuous Scroll**: Toggle between single-page and continuous scroll view modes (V key or toolbar button)
-- **Virtualized Rendering**: Only pages within +/-2 buffer of viewport are rendered; IntersectionObserver tracks visible pages
-- **Smart Context**: `getRelevantContextForPages()` sends referenced pages + adjacent pages to Claude
-- **SSE Streaming**: `/api/ai/chat` uses Server-Sent Events with vision content blocks
-- **Keyboard Shortcuts**: A (AI mode), V (view mode), H (highlight), Escape, +/- (zoom), arrows (navigate)
-- 229 tests passing across 19 test files
-- Build passes cleanly
+Phase: Monorepo migration — complete
+- **Turborepo monorepo**: `apps/web/` (Next.js) + `packages/shared/` (cross-platform logic)
+- **Package manager**: pnpm (replaced npm)
+- **Shared package** (`@cookednote/shared`): types, stores (pdf, annotation, ai), lib/utils, lib/ai-prompts
+- **Import convention**: `@cookednote/shared/types`, `@cookednote/shared/stores/pdf-store`, etc.
+- **No build step for shared**: Next.js `transpilePackages` consumes raw TypeScript
+- All Phase 1-6 features intact (auth, upload, PDF viewer, highlights, AI, folders, conversations, LaTeX)
+- 229 tests passing (105 shared + 124 web) across 19 test files
+- Build passes cleanly via `pnpm run build` (Turbo)
 
 ## Decisions Log
 - 2026-02-05: Chose Next.js App Router for better server components
@@ -366,3 +342,10 @@ Phase: Phase 6 (Extended Features) — complete
 - 2026-02-08: Conversation reopen from history uses query params `?conversation={id}&page={num}` on document URL
 - 2026-02-08: Folder sidebar hidden on mobile (`hidden md:block`) — mobile nav uses shorter labels
 - 2026-02-08: `prisma db push` used instead of `prisma migrate dev` due to Supabase shadow database limitations
+- 2026-02-09: Monorepo migration — Turborepo with pnpm workspaces (`apps/web/` + `packages/shared/`)
+- 2026-02-09: Shared package uses subpath exports (`@cookednote/shared/types`, `@cookednote/shared/stores/*`, etc.)
+- 2026-02-09: No build step for shared — Next.js `transpilePackages: ["@cookednote/shared"]` consumes raw TS
+- 2026-02-09: ai.ts split — pure prompt builders in shared, `getAnthropicClient()` stays in web with re-exports
+- 2026-02-09: Prisma stays in `apps/web/` (server-only, can extract to packages/db later)
+- 2026-02-09: pnpm requires `onlyBuiltDependencies` in root package.json for native deps (prisma, esbuild, clerk)
+- 2026-02-09: Turbo requires `packageManager` field in root package.json
