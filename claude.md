@@ -226,6 +226,99 @@ goodnotes-clone/
 - [x] Conversation history page (/dashboard/conversations)
 - [x] Mobile responsive fixes for folder sidebar
 
+---
+
+## Cross-Platform Launch Roadmap
+
+### Phase 7: Monorepo Migration (Week 1) — COMPLETE
+- [x] Switch from npm to pnpm
+- [x] Create turbo.json and pnpm-workspace.yaml
+- [x] Move Next.js app to apps/web/
+- [x] Extract shared code to packages/shared/ (types, stores, utils, ai-prompts)
+- [x] Update all imports to use workspace packages
+- [x] Verify web app works (229 tests, typecheck, build all pass)
+
+### Phase 8: Mobile App Scaffold (Week 2)
+- [ ] Create Expo app in apps/mobile/ (blank-typescript template)
+- [ ] Install core deps (expo-router, react-native-gesture-handler, reanimated)
+- [ ] Set up Expo Router file-based routing
+- [ ] Implement tab navigation (Library, Recent, Settings)
+- [ ] Add @clerk/clerk-expo authentication flow
+- [ ] Wire up shared stores from @cookednote/shared
+- [ ] Test on iOS Simulator + real iPad
+
+### Phase 9: PDF Viewer Mobile (Week 3)
+- [ ] Implement react-native-pdf wrapper component
+- [ ] Add virtualized page rendering (lazy load + buffer)
+- [ ] Implement pinch-to-zoom with momentum gestures
+- [ ] Add thumbnail sidebar navigation
+- [ ] Local PDF caching with expo-file-system
+- [ ] Test with large PDFs (100+ pages, 50MB+)
+- [ ] Verify 60fps scrolling performance
+
+### Phase 10: Handwriting Engine (Week 4-5)
+- [ ] Implement @shopify/react-native-skia canvas overlay on PDF
+- [ ] Add gesture detection (pan, force/pressure) via react-native-gesture-handler
+- [ ] Implement stroke smoothing (Catmull-Rom splines or Perfect Freehand)
+- [ ] Apple Pencil pressure sensitivity + tilt detection
+- [ ] Palm rejection heuristics (ignore >20px contact area)
+- [ ] Pen/highlighter/eraser tool modes
+- [ ] Undo/redo with action stack
+- [ ] Save strokes to local SQLite (DrawingStroke model)
+- [ ] Add web DrawingLayer (HTML Canvas + Pointer Events) for parity
+- [ ] Optimize to <16ms latency, test on real iPad with Apple Pencil
+
+### Phase 11: Sync & Cloud (Week 6)
+- [ ] Implement SyncQueue in packages/shared/ (offline-first)
+- [ ] Add background sync worker (expo-task-manager)
+- [ ] Supabase Realtime subscriptions for cross-device sync
+- [ ] Conflict resolution (last-write-wins for metadata, OT for strokes)
+- [ ] Test offline → online recovery
+- [ ] Sync status indicators in UI
+- [ ] Add DrawingStroke + SyncAction to Prisma schema
+
+### Phase 12: AI Integration Mobile (Week 7)
+- [ ] Port AI sidebar to bottom sheet (iOS native feel)
+- [ ] Screenshot capture with expo-image-manipulator
+- [ ] Reuse @cookednote/shared AI prompts + streaming SSE
+- [ ] Keyboard-aware scrolling, swipe to dismiss
+- [ ] Screenshot preview carousel
+- [ ] Copy/share AI responses
+
+### Phase 13: Monetization (Week 8)
+- [ ] Set up App Store Connect + Google Play Console
+- [ ] Create IAP products (Pro monthly $7.99, yearly $49.99)
+- [ ] Implement paywalls (free: 3 docs, 10 AI/month; pro: unlimited)
+- [ ] Subscription store in packages/shared/
+- [ ] Receipt validation (server-side)
+- [ ] "Restore Purchases" flow
+- [ ] Add Subscription model to Prisma schema
+- [ ] Test purchase flow in sandbox
+
+### Phase 14: Polish & Launch Prep (Week 9-10)
+- [ ] Run full testing checklist (iPad Pencil, iPhone, Android)
+- [ ] Fix critical bugs (crash, data loss, sync, purchase)
+- [ ] Performance targets met (<16ms draw, <2s launch, <1s PDF open)
+- [ ] App Store screenshots/preview videos
+- [ ] Privacy policy + support docs
+- [ ] Beta test with TestFlight (10-20 users)
+- [ ] Address beta feedback
+
+### Phase 15: Launch (Week 11)
+- [ ] Submit to App Store for review
+- [ ] Release v1.0
+- [ ] ProductHunt, social media, iPad productivity outreach
+- [ ] Monitor crash reports + reviews
+- [ ] Rapid bug fix cycle (1-2 day turnaround)
+
+### Phase 16: Android + Web Polish (Week 12-14)
+- [ ] Port to Android (reuse ~80% codebase)
+- [ ] Samsung S-Pen + stylus pressure support
+- [ ] Material Design 3 theming
+- [ ] Google Play submission
+- [ ] Update web app with learnings from mobile
+- [ ] Cross-platform feature parity
+
 ## Technical Challenges & Solutions
 
 ### Challenge 1: Text Selection in PDF
@@ -289,15 +382,26 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: Monorepo migration — complete
-- **Turborepo monorepo**: `apps/web/` (Next.js) + `packages/shared/` (cross-platform logic)
-- **Package manager**: pnpm (replaced npm)
-- **Shared package** (`@cookednote/shared`): types, stores (pdf, annotation, ai), lib/utils, lib/ai-prompts
-- **Import convention**: `@cookednote/shared/types`, `@cookednote/shared/stores/pdf-store`, etc.
-- **No build step for shared**: Next.js `transpilePackages` consumes raw TypeScript
-- All Phase 1-6 features intact (auth, upload, PDF viewer, highlights, AI, folders, conversations, LaTeX)
-- 229 tests passing (105 shared + 124 web) across 19 test files
-- Build passes cleanly via `pnpm run build` (Turbo)
+Phase: **Phase 7 complete** (Monorepo Migration) — next up: **Phase 8** (Mobile App Scaffold)
+
+**What's done:**
+- Phases 1-6: Full web MVP (auth, upload, PDF viewer, highlights, AI, folders, conversations, LaTeX)
+- Phase 7: Turborepo monorepo with `apps/web/` + `packages/shared/`
+- Package manager: pnpm | Import convention: `@cookednote/shared/*`
+- 229 tests passing (105 shared + 124 web) | Build passes cleanly
+
+**What's next:**
+- Phase 8: Create Expo app in `apps/mobile/`, Expo Router, Clerk auth, wire shared stores
+- See "Cross-Platform Launch Roadmap" above for full Phase 8-16 plan
+
+**Open questions before Phase 8:**
+1. App name finalized? (affects bundle IDs, branding)
+2. Target launch date?
+3. Budget for services? (Supabase tier, Anthropic API limits)
+4. Beta tester access? (need real iPad users)
+5. Design assets ready? (app icon, screenshots)
+6. Legal review completed? (privacy policy, ToS)
+7. Pricing finalized? (affects IAP setup)
 
 ## Decisions Log
 - 2026-02-05: Chose Next.js App Router for better server components
