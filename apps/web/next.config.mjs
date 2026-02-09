@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ["@cookednote/shared"],
   experimental: {
     serverComponentsExternalPackages: ["pdfjs-dist"],
   },
