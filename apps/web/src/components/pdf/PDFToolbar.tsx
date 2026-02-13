@@ -17,6 +17,11 @@ import {
   Rows3,
   FileText,
   Pin,
+  Pencil,
+  PenTool,
+  Eraser,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +34,8 @@ import {
 import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
 import { useAnnotationStore } from "@cookednote/shared/stores/annotation-store";
 import { useAIStore } from "@cookednote/shared/stores/ai-store";
-import { HIGHLIGHT_COLORS } from "@cookednote/shared/types";
+import { HIGHLIGHT_COLORS, STROKE_COLORS, STROKE_SIZES } from "@cookednote/shared/types";
+import { useDrawingStore } from "@cookednote/shared/stores/drawing-store";
 import { deleteAnnotation as deleteAnnotationApi } from "@/lib/annotations";
 import { useToast } from "@/hooks/use-toast";
 
@@ -51,6 +57,20 @@ export function PDFToolbar({ title }: PDFToolbarProps) {
     selectAnnotation,
   } = useAnnotationStore();
   const { isAIMode, toggleAIMode } = useAIStore();
+  const {
+    isDrawingMode,
+    toggleDrawingMode,
+    activeTool,
+    setActiveTool,
+    strokeColor,
+    setStrokeColor,
+    strokeSize,
+    setStrokeSize,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useDrawingStore();
   const [pageInput, setPageInput] = useState("");
   const { toast } = useToast();
 
@@ -238,6 +258,140 @@ export function PDFToolbar({ title }: PDFToolbarProps) {
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="h-6 w-px bg-border" />
+
+            {/* Drawing tools */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant={isDrawingMode ? "default" : "ghost"}
+                size="icon"
+                onClick={toggleDrawingMode}
+                title="Drawing mode (D)"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+
+              {isDrawingMode && (
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" title="Drawing tool">
+                        {activeTool === "pen" && <PenTool className="h-4 w-4" />}
+                        {activeTool === "highlighter" && <Highlighter className="h-4 w-4" />}
+                        {activeTool === "eraser" && <Eraser className="h-4 w-4" />}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center">
+                      <DropdownMenuItem onClick={() => setActiveTool("pen")}>
+                        <PenTool className="mr-2 h-4 w-4" /> Pen
+                        {activeTool === "pen" && <Check className="ml-auto h-4 w-4" />}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setActiveTool("highlighter")}>
+                        <Highlighter className="mr-2 h-4 w-4" /> Highlighter
+                        {activeTool === "highlighter" && <Check className="ml-auto h-4 w-4" />}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setActiveTool("eraser")}>
+                        <Eraser className="mr-2 h-4 w-4" /> Eraser
+                        {activeTool === "eraser" && <Check className="ml-auto h-4 w-4" />}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {activeTool !== "eraser" && (
+                    <>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" title="Stroke color">
+                            <div
+                              className="h-4 w-4 rounded-full border border-border"
+                              style={{ backgroundColor: strokeColor }}
+                            />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="center">
+                          {STROKE_COLORS.map((color) => (
+                            <DropdownMenuItem
+                              key={color.name}
+                              onClick={() => setStrokeColor(color.value)}
+                              className="flex items-center justify-between"
+                            >
+                              <div className="flex items-center">
+                                <div
+                                  className="mr-2 h-4 w-4 rounded-full"
+                                  style={{ backgroundColor: color.value }}
+                                />
+                                {color.name}
+                              </div>
+                              {strokeColor === color.value && (
+                                <Check className="ml-2 h-4 w-4" />
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" title="Stroke size">
+                            <div
+                              className="rounded-full bg-foreground"
+                              style={{
+                                width: (STROKE_SIZES.find((s) => s.value === strokeSize)?.dotPixels ?? 8) * 0.75,
+                                height: (STROKE_SIZES.find((s) => s.value === strokeSize)?.dotPixels ?? 8) * 0.75,
+                              }}
+                            />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="center">
+                          {STROKE_SIZES.map((size) => (
+                            <DropdownMenuItem
+                              key={size.name}
+                              onClick={() => setStrokeSize(size.value)}
+                              className="flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="rounded-full bg-foreground"
+                                  style={{
+                                    width: size.dotPixels * 0.75,
+                                    height: size.dotPixels * 0.75,
+                                  }}
+                                />
+                                {size.name}
+                              </div>
+                              {strokeSize === size.value && (
+                                <Check className="ml-2 h-4 w-4" />
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
+                  )}
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={undo}
+                    disabled={!canUndo()}
+                    title="Undo (Ctrl+Z)"
+                  >
+                    <Undo2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={redo}
+                    disabled={!canRedo()}
+                    title="Redo (Ctrl+Shift+Z)"
+                  >
+                    <Redo2 className="h-4 w-4" />
+                  </Button>
+                </>
               )}
             </div>
 

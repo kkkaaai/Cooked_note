@@ -5,6 +5,7 @@ import { Page } from "react-pdf";
 import { Loader2 } from "lucide-react";
 import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
 import { HighlightLayer } from "./HighlightLayer";
+import { DrawingLayer } from "./DrawingLayer";
 import { RegionSelectOverlay } from "./RegionSelectOverlay";
 import { ConversationBadge } from "@/components/ai/ConversationBadge";
 import type { NormalizedRect } from "@cookednote/shared/types";
@@ -229,6 +230,7 @@ export function ContinuousScrollView({
                 className="shadow-lg"
               >
                 <HighlightLayer pageNumber={pageNum} />
+                <DrawingLayer pageNumber={pageNum} />
                 {isAIMode && activeRegionPage === pageNum && (
                   <RegionSelectOverlay
                     isSelecting={isSelecting}

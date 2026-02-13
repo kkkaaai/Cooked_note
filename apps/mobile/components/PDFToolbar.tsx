@@ -1,8 +1,9 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ChevronLeft, LayoutGrid } from "lucide-react-native";
+import { ChevronLeft, LayoutGrid, Pencil } from "lucide-react-native";
 import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
+import { useDrawingStore } from "@cookednote/shared/stores/drawing-store";
 import { colors } from "@/lib/constants";
 
 interface PDFToolbarProps {
@@ -15,6 +16,8 @@ export function PDFToolbar({ title, onToggleThumbnails }: PDFToolbarProps) {
   const insets = useSafeAreaInsets();
   const currentPage = usePDFStore((s) => s.currentPage);
   const numPages = usePDFStore((s) => s.numPages);
+  const isDrawingMode = useDrawingStore((s) => s.isDrawingMode);
+  const toggleDrawingMode = useDrawingStore((s) => s.toggleDrawingMode);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -40,6 +43,15 @@ export function PDFToolbar({ title, onToggleThumbnails }: PDFToolbarProps) {
           )}
         </View>
 
+        <Pressable
+          onPress={toggleDrawingMode}
+          style={[styles.drawButton, isDrawingMode && styles.drawButtonActive]}
+          hitSlop={8}
+          accessibilityLabel="Toggle drawing mode"
+          accessibilityRole="button"
+        >
+          <Pencil color={isDrawingMode ? "#ffffff" : colors.primary} size={20} />
+        </Pressable>
         <Pressable
           onPress={onToggleThumbnails}
           style={styles.thumbnailButton}
@@ -85,6 +97,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 1,
+  },
+  drawButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+  },
+  drawButtonActive: {
+    backgroundColor: colors.primary,
   },
   thumbnailButton: {
     width: 40,

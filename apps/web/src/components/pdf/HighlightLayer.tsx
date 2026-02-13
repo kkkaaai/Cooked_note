@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useAnnotationStore } from "@cookednote/shared/stores/annotation-store";
 import type { Annotation } from "@cookednote/shared/types";
+import { isHighlightPosition } from "@cookednote/shared/types";
 
 interface HighlightLayerProps {
   pageNumber: number;
@@ -53,6 +54,7 @@ function HighlightOverlay({
   isSelected,
   onSelect,
 }: HighlightOverlayProps) {
+  if (!isHighlightPosition(annotation.position)) return null;
   const rects = annotation.position.rects;
   const color = annotation.color || "#FBBF24";
 

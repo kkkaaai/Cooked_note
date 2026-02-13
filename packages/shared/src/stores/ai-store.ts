@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { AIMessage, Screenshot } from "../types";
 import { useAnnotationStore, setOnHighlightModeActivated } from "./annotation-store";
+import { useDrawingStore, setOnDrawingModeActivated } from "./drawing-store";
 
 const MAX_SCREENSHOTS = 5;
 
@@ -54,6 +55,7 @@ export const useAIStore = create<AIStore>((set, get) => ({
     set({ isAIMode: newMode });
     if (newMode) {
       useAnnotationStore.getState().setHighlightMode(false);
+      useDrawingStore.getState().setDrawingMode(false);
     }
   },
 
@@ -61,6 +63,7 @@ export const useAIStore = create<AIStore>((set, get) => ({
     set({ isAIMode: mode });
     if (mode) {
       useAnnotationStore.getState().setHighlightMode(false);
+      useDrawingStore.getState().setDrawingMode(false);
     }
   },
 
@@ -128,4 +131,10 @@ export const useAIStore = create<AIStore>((set, get) => ({
 // Register callback so annotation-store can turn off AI mode when highlight mode activates
 setOnHighlightModeActivated(() => {
   useAIStore.getState().setAIMode(false);
+});
+
+// Register callback so drawing-store can turn off AI + highlight when drawing mode activates
+setOnDrawingModeActivated(() => {
+  useAIStore.getState().setAIMode(false);
+  useAnnotationStore.getState().setHighlightMode(false);
 });

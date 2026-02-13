@@ -13,11 +13,14 @@ import { useTextSelection } from "@/hooks/use-text-selection";
 import { useRegionSelect } from "@/hooks/use-region-select";
 import { captureRegion } from "@/lib/screenshot";
 import { HighlightLayer } from "./HighlightLayer";
+import { DrawingLayer } from "./DrawingLayer";
 import { RegionSelectOverlay } from "./RegionSelectOverlay";
 import { ContinuousScrollView } from "./ContinuousScrollView";
 import { SelectionPopup } from "./SelectionPopup";
 import { ConversationBadge } from "@/components/ai/ConversationBadge";
 import { useConversationStore } from "@/stores/conversation-store";
+import { useDrawingStore } from "@cookednote/shared/stores/drawing-store";
+import { useDrawingSave } from "@/hooks/use-drawing-save";
 import {
   fetchAnnotations,
   createAnnotation as createAnnotationApi,
@@ -41,8 +44,12 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
     reset: resetAnnotations,
   } = useAnnotationStore();
   const isAIMode = useAIStore((s) => s.isAIMode);
+  const isDrawingMode = useDrawingStore((s) => s.isDrawingMode);
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Load/save drawing annotations
+  useDrawingSave(documentId);
 
   // Helper: find which page a point lands on (for continuous mode)
   const getPageFromPoint = useCallback((x: number, y: number) => {
@@ -69,7 +76,7 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
   const { selection, clearSelection } = useTextSelection({
     containerRef,
     pageNumber: currentPage,
-    enabled: !isAIMode,
+    enabled: !isAIMode && !isDrawingMode,
     resolvePageFromSelection: viewMode === "continuous",
   });
 
@@ -115,7 +122,7 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
   const { isSelecting, selectionRect, activeRegionPage } = useRegionSelect({
     containerRef,
     pageNumber: currentPage,
-    enabled: isAIMode,
+    enabled: isAIMode && !isDrawingMode,
     onRegionSelected: handleRegionSelected,
     getPageFromPoint: viewMode === "continuous" ? getPageFromPoint : undefined,
   });
@@ -214,7 +221,7 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
       ref={containerRef}
       className={`flex flex-1 overflow-auto bg-muted/30 p-4${
         viewMode === "single" ? " items-start justify-center" : " justify-center"
-      }${isHighlightMode ? " cursor-text" : isAIMode ? " cursor-crosshair" : ""}`}
+      }${isDrawingMode ? " cursor-crosshair" : isHighlightMode ? " cursor-text" : isAIMode ? " cursor-crosshair" : ""}`}
       onClick={handleContainerClick}
     >
       <Document
@@ -254,6 +261,7 @@ export function PDFCanvas({ fileUrl }: PDFCanvasProps) {
               className="shadow-lg"
             >
               <HighlightLayer pageNumber={currentPage} />
+              <DrawingLayer pageNumber={currentPage} />
               {isAIMode && (
                 <RegionSelectOverlay
                   isSelecting={isSelecting}

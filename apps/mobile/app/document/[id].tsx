@@ -7,6 +7,9 @@ import { getCachedPDF } from "@/lib/pdf-cache";
 import { PDFViewer } from "@/components/PDFViewer";
 import { PDFToolbar } from "@/components/PDFToolbar";
 import { ThumbnailSidebar } from "@/components/ThumbnailSidebar";
+import { DrawingToolbar } from "@/components/DrawingToolbar";
+import { useDrawingStore } from "@cookednote/shared/stores/drawing-store";
+import { useDrawingSave } from "@/hooks/use-drawing-save";
 import { colors } from "@/lib/constants";
 import type { DocumentMeta } from "@cookednote/shared/types";
 import type Pdf from "react-native-pdf";
@@ -21,6 +24,10 @@ export default function DocumentScreen() {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [showThumbnails, setShowThumbnails] = useState(false);
+  const isDrawingMode = useDrawingStore((s) => s.isDrawingMode);
+
+  // Load/save drawing annotations
+  useDrawingSave(id ?? null);
 
   const loadDocument = useCallback(async () => {
     if (!id) return;
@@ -53,6 +60,7 @@ export default function DocumentScreen() {
     loadDocument();
     return () => {
       usePDFStore.getState().reset();
+      useDrawingStore.getState().reset();
     };
   }, [loadDocument]);
 
@@ -101,6 +109,7 @@ export default function DocumentScreen() {
         localPath={localPath}
         documentId={id}
       />
+      {isDrawingMode && <DrawingToolbar />}
       <ThumbnailSidebar
         visible={showThumbnails}
         onClose={() => setShowThumbnails(false)}

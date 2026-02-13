@@ -10,14 +10,37 @@ const normalizedRectSchema = z.object({
   height: z.number().min(0).max(1),
 });
 
+const highlightPositionSchema = z.object({
+  rects: z.array(normalizedRectSchema).min(1),
+});
+
+const drawingPointSchema = z.object({
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  pressure: z.number().min(0).max(1),
+});
+
+const drawingStrokeSchema = z.object({
+  id: z.string(),
+  points: z.array(drawingPointSchema).min(1),
+  color: z.string(),
+  size: z.number().positive(),
+  tool: z.enum(["pen", "highlighter", "eraser"]),
+  timestamp: z.number(),
+});
+
+const drawingPositionSchema = z.object({
+  strokes: z.array(drawingStrokeSchema),
+});
+
+const positionSchema = z.union([highlightPositionSchema, drawingPositionSchema]);
+
 const createAnnotationSchema = z.object({
   documentId: z.string().uuid(),
-  type: z.enum(["highlight", "note", "ai_explanation"]),
+  type: z.enum(["highlight", "note", "ai_explanation", "drawing"]),
   pageNumber: z.number().int().positive(),
   color: z.string().optional(),
-  position: z.object({
-    rects: z.array(normalizedRectSchema).min(1),
-  }),
+  position: positionSchema,
   selectedText: z.string().optional(),
   content: z.string().optional(),
 });

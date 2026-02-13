@@ -268,15 +268,15 @@ goodnotes-clone/
 - [ ] Verify 60fps scrolling performance
 
 ### Phase 10: Handwriting Engine (Week 4-5)
-- [ ] Implement @shopify/react-native-skia canvas overlay on PDF
-- [ ] Add gesture detection (pan, force/pressure) via react-native-gesture-handler
-- [ ] Implement stroke smoothing (Catmull-Rom splines or Perfect Freehand)
-- [ ] Apple Pencil pressure sensitivity + tilt detection
-- [ ] Palm rejection heuristics (ignore >20px contact area)
-- [ ] Pen/highlighter/eraser tool modes
-- [ ] Undo/redo with action stack
-- [ ] Save strokes to local SQLite (DrawingStroke model)
-- [ ] Add web DrawingLayer (HTML Canvas + Pointer Events) for parity
+- [x] Implement @shopify/react-native-skia canvas overlay on PDF
+- [x] Add gesture detection (pan, force/pressure) via react-native-gesture-handler
+- [x] Implement stroke smoothing (perfect-freehand library)
+- [x] Apple Pencil pressure sensitivity (event.force)
+- [x] Palm rejection heuristics (multi-pointer rejection)
+- [x] Pen/highlighter/eraser tool modes
+- [x] Undo/redo with action stack
+- [x] Save strokes via API (drawing annotation type in existing Annotation model)
+- [x] Add web DrawingLayer (HTML Canvas + Pointer Events) for parity
 - [ ] Optimize to <16ms latency, test on real iPad with Apple Pencil
 
 ### Phase 11: Sync & Cloud (Week 6)
@@ -393,29 +393,33 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: **Phase 9 in progress** (PDF Viewer Mobile) — code complete, needs device testing
+Phase: **Phase 10 complete** (Handwriting Engine) — next up: **Phase 11** (Sync & Cloud)
 
 **What's done:**
 - Phases 1-6: Full web MVP (auth, upload, PDF viewer, highlights, AI, folders, conversations, LaTeX)
 - Phase 7: Turborepo monorepo with `apps/web/` + `packages/shared/`
 - Phase 8: Expo mobile app scaffold at `apps/mobile/` with Clerk auth, tab navigation, shared types
-- Phase 9: PDF viewer mobile implementation:
-  - `react-native-pdf` v6.7.6 wrapper with store integration (PDFViewer.tsx)
-  - Document list with FlashList grid + pull-to-refresh (DocumentGrid.tsx)
-  - PDF caching layer with expo-file-system + AsyncStorage (pdf-cache.ts)
-  - Authenticated API client with Clerk JWT (api.ts)
-  - PDF toolbar with back nav, title, page indicator (PDFToolbar.tsx)
-  - Thumbnail sidebar for page navigation (ThumbnailSidebar.tsx)
-  - Stack navigation: (tabs) → document/[id] full-screen viewer
-  - Config plugins: @config-plugins/react-native-pdf, react-native-blob-util
+- Phase 9: PDF viewer mobile (react-native-pdf, caching, document grid, thumbnails)
+- Phase 10: Handwriting Engine (cross-platform drawing):
+  - Shared: DrawingTool/Point/Stroke/Position types, AnnotationPosition union, type guards
+  - Shared: Drawing Zustand store (tool state, stroke lifecycle, undo/redo, eraser, dirty pages)
+  - Shared: Stroke renderer using perfect-freehand (outline→SVG path, opacity, blend modes)
+  - Web: DrawingLayer (Canvas2D overlay, Pointer Events, offscreen canvas, rAF animation)
+  - Web: Drawing save hook (debounced 2s save to API, load on mount)
+  - Web: PDFToolbar drawing controls (tool selector, color picker, size picker, undo/redo)
+  - Web: Keyboard shortcuts (D toggle, Ctrl+Z undo, Ctrl+Shift+Z redo)
+  - Mobile: DrawingCanvas (Skia + Gesture.Pan, pressure sensitivity, palm rejection)
+  - Mobile: DrawingToolbar (tools, colors, sizes, undo/redo)
+  - Mobile: Drawing save hook (same API-based persistence)
+  - API: Updated annotation routes to accept "drawing" type with DrawingPosition
+  - Cross-store: Drawing/Highlight/AI modes mutually exclusive via callbacks
 - App: CookedNote | Bundle ID: `com.cookednote.app` | SDK: Expo 52
-- 229 tests passing (105 shared + 124 web) | All 3 workspaces typecheck clean
+- 289 tests passing (159 shared + 130 web) | All 3 workspaces typecheck clean | Build passes
 
 **What's next:**
-- Run `npx expo prebuild` + test on iOS Simulator (requires native modules)
-- Test with large PDFs (100+ pages, 50MB+) for performance
-- Verify 60fps scrolling, pinch-to-zoom, cache behavior
-- Phase 10: Handwriting Engine (react-native-skia, gesture handling, Apple Pencil)
+- Phase 11: Sync & Cloud (offline-first queue, background sync, Supabase Realtime)
+- Still need device testing for Phase 9+10 (iOS Simulator, real iPad with Apple Pencil)
+- Performance optimization for drawing (<16ms latency target)
 
 **Open questions:**
 1. Target launch date?
@@ -488,3 +492,11 @@ Phase: **Phase 9 in progress** (PDF Viewer Mobile) — code complete, needs devi
 - 2026-02-13: `useApiFetch` must use `useCallback` to stabilize function identity — otherwise causes infinite re-render in `useDocuments`
 - 2026-02-13: Root layout changed from `<Slot>` to `<Stack>` to support `document/[id]` route outside tabs
 - 2026-02-13: `react-native-reanimated` plugin must be last in babel.config.js plugins array
+- 2026-02-13: Drawing annotations use existing Annotation model with `type: "drawing"` and `position: { strokes: [...] }` (DrawingPosition)
+- 2026-02-13: `perfect-freehand` installed in `packages/shared/` — cross-platform stroke smoothing with pressure sensitivity
+- 2026-02-13: AnnotationPosition = HighlightPosition | DrawingPosition (discriminated union with type guards)
+- 2026-02-13: Drawing store uses Map<number, DrawingStroke[]> for per-page strokes with Set<number> dirty page tracking
+- 2026-02-13: Cross-store coordination expanded: drawing/highlight/AI modes are mutually exclusive (callbacks + direct imports)
+- 2026-02-13: Web DrawingLayer uses Canvas2D + offscreen canvas for committed strokes + rAF for active stroke
+- 2026-02-13: Mobile DrawingCanvas uses @shopify/react-native-skia + Gesture.Pan() for GPU-accelerated drawing
+- 2026-02-13: Zustand Map selector creates new `[]` ref each render — use `useMemo` to stabilize (same pattern as annotation filter)

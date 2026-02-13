@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
 import { useAnnotationStore } from "@cookednote/shared/stores/annotation-store";
 import { useAIStore } from "@cookednote/shared/stores/ai-store";
+import { useDrawingStore } from "@cookednote/shared/stores/drawing-store";
 import { deleteAnnotation as deleteAnnotationApi } from "@/lib/annotations";
 
 export function useKeyboardShortcuts() {
@@ -11,6 +12,7 @@ export function useKeyboardShortcuts() {
   const { toggleHighlightMode, selectedAnnotationId, removeAnnotation, selectAnnotation } =
     useAnnotationStore();
   const { toggleAIMode, isSidebarOpen, closeSidebar } = useAIStore();
+  const { toggleDrawingMode, undo: drawingUndo, redo: drawingRedo, isDrawingMode } = useDrawingStore();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -22,6 +24,19 @@ export function useKeyboardShortcuts() {
         target.isContentEditable
       ) {
         return;
+      }
+
+      // Ctrl+Z / Ctrl+Shift+Z for drawing undo/redo
+      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+        if (isDrawingMode) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            drawingRedo();
+          } else {
+            drawingUndo();
+          }
+          return;
+        }
       }
 
       switch (e.key) {
@@ -46,6 +61,11 @@ export function useKeyboardShortcuts() {
         case "H":
           e.preventDefault();
           toggleHighlightMode();
+          break;
+        case "d":
+        case "D":
+          e.preventDefault();
+          toggleDrawingMode();
           break;
         case "a":
         case "A":
@@ -80,5 +100,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [nextPage, previousPage, zoomIn, zoomOut, toggleHighlightMode, selectedAnnotationId, removeAnnotation, selectAnnotation, toggleAIMode, isSidebarOpen, closeSidebar, viewMode, setViewMode]);
+  }, [nextPage, previousPage, zoomIn, zoomOut, toggleHighlightMode, toggleDrawingMode, drawingUndo, drawingRedo, isDrawingMode, selectedAnnotationId, removeAnnotation, selectAnnotation, toggleAIMode, isSidebarOpen, closeSidebar, viewMode, setViewMode]);
 }

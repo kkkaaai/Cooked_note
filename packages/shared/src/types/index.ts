@@ -5,7 +5,7 @@ export interface Position {
   height: number;
 }
 
-export type AnnotationType = "highlight" | "note" | "ai_explanation";
+export type AnnotationType = "highlight" | "note" | "ai_explanation" | "drawing";
 
 export interface HighlightColor {
   name: string;
@@ -34,6 +34,62 @@ export interface HighlightPosition {
   rects: NormalizedRect[];
 }
 
+// Drawing types
+export type DrawingTool = "pen" | "highlighter" | "eraser";
+
+export interface DrawingPoint {
+  x: number; // 0-1 normalized
+  y: number; // 0-1 normalized
+  pressure: number; // 0-1
+}
+
+export interface DrawingStroke {
+  id: string;
+  points: DrawingPoint[];
+  color: string;
+  size: number; // stroke width in normalized units
+  tool: DrawingTool;
+  timestamp: number;
+}
+
+export interface DrawingPosition {
+  strokes: DrawingStroke[];
+}
+
+// Discriminated union for annotation positions
+export type AnnotationPosition = HighlightPosition | DrawingPosition;
+
+// Type guards
+export function isHighlightPosition(pos: AnnotationPosition): pos is HighlightPosition {
+  return "rects" in pos;
+}
+
+export function isDrawingPosition(pos: AnnotationPosition): pos is DrawingPosition {
+  return "strokes" in pos;
+}
+
+// Drawing constants
+export const DRAWING_TOOLS: { name: string; value: DrawingTool }[] = [
+  { name: "Pen", value: "pen" },
+  { name: "Highlighter", value: "highlighter" },
+  { name: "Eraser", value: "eraser" },
+];
+
+export const STROKE_COLORS = [
+  { name: "Black", value: "#000000" },
+  { name: "Red", value: "#EF4444" },
+  { name: "Blue", value: "#3B82F6" },
+  { name: "Green", value: "#22C55E" },
+  { name: "Orange", value: "#F97316" },
+  { name: "Purple", value: "#A855F7" },
+];
+
+export const STROKE_SIZES = [
+  { name: "Fine", value: 0.002, dotPixels: 6 },
+  { name: "Medium", value: 0.004, dotPixels: 10 },
+  { name: "Thick", value: 0.008, dotPixels: 16 },
+];
+
 // Client-side Annotation object (matches API response shape)
 export interface Annotation {
   id: string;
@@ -42,7 +98,7 @@ export interface Annotation {
   type: AnnotationType;
   pageNumber: number;
   color: string | null;
-  position: HighlightPosition;
+  position: AnnotationPosition;
   selectedText: string | null;
   content: string | null;
   createdAt: string;
@@ -55,7 +111,7 @@ export interface CreateAnnotationInput {
   type: AnnotationType;
   pageNumber: number;
   color?: string;
-  position: HighlightPosition;
+  position: AnnotationPosition;
   selectedText?: string;
   content?: string;
 }
@@ -64,6 +120,7 @@ export interface CreateAnnotationInput {
 export interface UpdateAnnotationInput {
   color?: string;
   content?: string;
+  position?: AnnotationPosition;
 }
 
 // Screenshot captured from PDF canvas region

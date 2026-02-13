@@ -15,6 +15,7 @@
     "@cookednote/shared": "workspace:*",
     "@react-native-async-storage/async-storage": "^1.23.1",
     "@shopify/flash-list": "^1.7.3",
+    "@shopify/react-native-skia": "^2.4.21",
     "expo": "~52.0.0",
     "expo-constants": "~17.0.0",
     "expo-file-system": "^18.0.12",
