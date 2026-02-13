@@ -177,6 +177,17 @@ goodnotes-clone/
 │       ├── types/index.ts       # All TypeScript interfaces and constants
 │       ├── stores/              # pdf-store, annotation-store, ai-store (+tests)
 │       └── lib/                 # utils (cn), ai-prompts (pure prompt builders)
+├── apps/mobile/                 # Expo mobile app
+│   ├── app/
+│   │   ├── _layout.tsx          # Root Stack layout with Clerk auth
+│   │   ├── (auth)/              # Sign-in, sign-up screens
+│   │   ├── (tabs)/              # Library, Recent, Settings tabs
+│   │   └── document/[id].tsx    # Full-screen PDF viewer
+│   ├── components/              # PDFViewer, PDFToolbar, ThumbnailSidebar, DocumentGrid, DocumentCard, EmptyState
+│   ├── hooks/                   # use-documents
+│   ├── lib/                     # api, pdf-cache, constants
+│   ├── app.json, metro.config.js, babel.config.js
+│   └── package.json (@cookednote/mobile)
 ├── turbo.json
 ├── pnpm-workspace.yaml
 ├── tsconfig.json                # Base TS config
@@ -239,20 +250,20 @@ goodnotes-clone/
 - [x] Verify web app works (229 tests, typecheck, build all pass)
 
 ### Phase 8: Mobile App Scaffold (Week 2)
-- [ ] Create Expo app in apps/mobile/ (blank-typescript template)
-- [ ] Install core deps (expo-router, react-native-gesture-handler, reanimated)
-- [ ] Set up Expo Router file-based routing
-- [ ] Implement tab navigation (Library, Recent, Settings)
-- [ ] Add @clerk/clerk-expo authentication flow
-- [ ] Wire up shared stores from @cookednote/shared
+- [x] Create Expo app in apps/mobile/ (manual setup for monorepo)
+- [x] Install core deps (expo-router, expo-secure-store, lucide-react-native)
+- [x] Set up Expo Router file-based routing
+- [x] Implement tab navigation (Library, Recent, Settings)
+- [x] Add @clerk/clerk-expo authentication flow
+- [x] Wire up shared stores from @cookednote/shared
 - [ ] Test on iOS Simulator + real iPad
 
 ### Phase 9: PDF Viewer Mobile (Week 3)
-- [ ] Implement react-native-pdf wrapper component
-- [ ] Add virtualized page rendering (lazy load + buffer)
-- [ ] Implement pinch-to-zoom with momentum gestures
-- [ ] Add thumbnail sidebar navigation
-- [ ] Local PDF caching with expo-file-system
+- [x] Implement react-native-pdf wrapper component
+- [x] Add virtualized page rendering (lazy load + buffer)
+- [x] Implement pinch-to-zoom with momentum gestures
+- [x] Add thumbnail sidebar navigation
+- [x] Local PDF caching with expo-file-system
 - [ ] Test with large PDFs (100+ pages, 50MB+)
 - [ ] Verify 60fps scrolling performance
 
@@ -382,26 +393,37 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: **Phase 7 complete** (Monorepo Migration) — next up: **Phase 8** (Mobile App Scaffold)
+Phase: **Phase 9 in progress** (PDF Viewer Mobile) — code complete, needs device testing
 
 **What's done:**
 - Phases 1-6: Full web MVP (auth, upload, PDF viewer, highlights, AI, folders, conversations, LaTeX)
 - Phase 7: Turborepo monorepo with `apps/web/` + `packages/shared/`
-- Package manager: pnpm | Import convention: `@cookednote/shared/*`
-- 229 tests passing (105 shared + 124 web) | Build passes cleanly
+- Phase 8: Expo mobile app scaffold at `apps/mobile/` with Clerk auth, tab navigation, shared types
+- Phase 9: PDF viewer mobile implementation:
+  - `react-native-pdf` v6.7.6 wrapper with store integration (PDFViewer.tsx)
+  - Document list with FlashList grid + pull-to-refresh (DocumentGrid.tsx)
+  - PDF caching layer with expo-file-system + AsyncStorage (pdf-cache.ts)
+  - Authenticated API client with Clerk JWT (api.ts)
+  - PDF toolbar with back nav, title, page indicator (PDFToolbar.tsx)
+  - Thumbnail sidebar for page navigation (ThumbnailSidebar.tsx)
+  - Stack navigation: (tabs) → document/[id] full-screen viewer
+  - Config plugins: @config-plugins/react-native-pdf, react-native-blob-util
+- App: CookedNote | Bundle ID: `com.cookednote.app` | SDK: Expo 52
+- 229 tests passing (105 shared + 124 web) | All 3 workspaces typecheck clean
 
 **What's next:**
-- Phase 8: Create Expo app in `apps/mobile/`, Expo Router, Clerk auth, wire shared stores
-- See "Cross-Platform Launch Roadmap" above for full Phase 8-16 plan
+- Run `npx expo prebuild` + test on iOS Simulator (requires native modules)
+- Test with large PDFs (100+ pages, 50MB+) for performance
+- Verify 60fps scrolling, pinch-to-zoom, cache behavior
+- Phase 10: Handwriting Engine (react-native-skia, gesture handling, Apple Pencil)
 
-**Open questions before Phase 8:**
-1. App name finalized? (affects bundle IDs, branding)
-2. Target launch date?
-3. Budget for services? (Supabase tier, Anthropic API limits)
-4. Beta tester access? (need real iPad users)
-5. Design assets ready? (app icon, screenshots)
-6. Legal review completed? (privacy policy, ToS)
-7. Pricing finalized? (affects IAP setup)
+**Open questions:**
+1. Target launch date?
+2. Budget for services? (Supabase tier, Anthropic API limits)
+3. Beta tester access? (need real iPad users)
+4. Design assets ready? (app icon, screenshots)
+5. Legal review completed? (privacy policy, ToS)
+6. Pricing finalized? (affects IAP setup)
 
 ## Decisions Log
 - 2026-02-05: Chose Next.js App Router for better server components
@@ -453,3 +475,16 @@ Phase: **Phase 7 complete** (Monorepo Migration) — next up: **Phase 8** (Mobil
 - 2026-02-09: Prisma stays in `apps/web/` (server-only, can extract to packages/db later)
 - 2026-02-09: pnpm requires `onlyBuiltDependencies` in root package.json for native deps (prisma, esbuild, clerk)
 - 2026-02-09: Turbo requires `packageManager` field in root package.json
+- 2026-02-10: Mobile app uses `@clerk/clerk-expo` v2 with `tokenCache` from `@clerk/clerk-expo/token-cache` (expo-secure-store)
+- 2026-02-10: Manual Expo project setup (not create-expo-app) for clean monorepo integration
+- 2026-02-10: Metro config: `unstable_enablePackageExports: true` for shared subpath exports, `watchFolders` for live reload
+- 2026-02-10: StyleSheet (not NativeWind) for initial scaffold — avoids NativeWind v5 complexity
+- 2026-02-10: `lucide-react-native` for tab icons (matches web's `lucide-react`)
+- 2026-02-13: `react-native-pdf` v6.7.6 + `@config-plugins/react-native-pdf` v9.0.0 for PDF rendering (native PDFKit/PdfRenderer)
+- 2026-02-13: `react-native-blob-util` required as peer dep for react-native-pdf file access
+- 2026-02-13: `@shopify/flash-list` v1.7.3 for document grid (recycled rendering, SDK 52 compatible)
+- 2026-02-13: PDF caching: `expo-file-system` downloads to `cacheDirectory/pdfs/`, `AsyncStorage` maps docId → path
+- 2026-02-13: API auth: `useApiFetch()` hook wraps fetch with Clerk JWT; mobile + web share same Clerk app
+- 2026-02-13: `useApiFetch` must use `useCallback` to stabilize function identity — otherwise causes infinite re-render in `useDocuments`
+- 2026-02-13: Root layout changed from `<Slot>` to `<Stack>` to support `document/[id]` route outside tabs
+- 2026-02-13: `react-native-reanimated` plugin must be last in babel.config.js plugins array
