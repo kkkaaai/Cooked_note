@@ -52,6 +52,7 @@ export async function PATCH(
 
     // Check for JSON body (optional — touch requests send no body)
     let data: Record<string, unknown> = { lastOpenedAt: new Date() };
+    let clientSyncVersion: number | undefined;
     try {
       const body = await req.json();
       if (body.folderId !== undefined) {
@@ -60,8 +61,25 @@ export async function PATCH(
       if (body.title !== undefined) {
         data = { ...data, title: body.title };
       }
+      if (body.syncVersion !== undefined) {
+        clientSyncVersion = body.syncVersion;
+      }
     } catch {
       // No body — just touch lastOpenedAt
+    }
+
+    // Conflict detection
+    if (clientSyncVersion !== undefined) {
+      const existing = await db.document.findUnique({
+        where: { id: params.id },
+      });
+      if (existing && existing.syncVersion !== clientSyncVersion) {
+        return NextResponse.json(
+          { error: "Conflict", serverEntity: existing },
+          { status: 409 }
+        );
+      }
+      data.syncVersion = { increment: 1 };
     }
 
     const document = await db.document.update({

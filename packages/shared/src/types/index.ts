@@ -101,6 +101,7 @@ export interface Annotation {
   position: AnnotationPosition;
   selectedText: string | null;
   content: string | null;
+  syncVersion?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -163,8 +164,10 @@ export interface DocumentMeta {
   fileUrl: string;
   fileSize: number;
   pageCount: number;
+  syncVersion?: number;
   uploadedAt: string;
   lastOpenedAt: string;
+  updatedAt?: string;
   folderId: string | null;
 }
 
@@ -191,6 +194,7 @@ export interface Folder {
   name: string;
   color: string;
   parentId: string | null;
+  syncVersion?: number;
   createdAt: string;
   updatedAt: string;
   children?: Folder[];
@@ -242,4 +246,21 @@ export interface CreateConversationInput {
   title: string;
   screenshots: Screenshot[];
   messages: { role: "user" | "assistant"; content: string; screenshots?: Screenshot[] }[];
+}
+
+// Sync types
+export type SyncStatus = "idle" | "syncing" | "error" | "offline";
+export type SyncActionType = "create" | "update" | "delete";
+export type SyncEntityType = "annotation" | "document" | "folder";
+
+export interface SyncAction {
+  id: string;
+  entityType: SyncEntityType;
+  entityId: string;
+  actionType: SyncActionType;
+  payload: Record<string, unknown>;
+  timestamp: number;
+  status: "pending" | "in_flight" | "failed";
+  retryCount: number;
+  error?: string;
 }

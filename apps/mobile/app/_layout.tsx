@@ -4,6 +4,8 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { colors } from "@/lib/constants";
+import { useSync } from "@/hooks/use-sync";
+import { registerBackgroundSync } from "@/lib/background-sync";
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -15,6 +17,16 @@ function AuthGate() {
   const { isSignedIn, isLoaded } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+
+  // Initialize sync system
+  useSync();
+
+  // Register background sync task
+  useEffect(() => {
+    if (isSignedIn) {
+      registerBackgroundSync();
+    }
+  }, [isSignedIn]);
 
   useEffect(() => {
     if (!isLoaded) return;

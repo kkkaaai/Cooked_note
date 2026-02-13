@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { PDFToolbar } from "@/components/pdf/PDFToolbar";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { useSync } from "@/hooks/use-sync";
 import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
 import { useAIStore } from "@cookednote/shared/stores/ai-store";
 import { useConversationStore } from "@/stores/conversation-store";
@@ -42,6 +43,7 @@ export default function DocumentPage() {
   const resetConversations = useConversationStore((s) => s.reset);
 
   useKeyboardShortcuts();
+  useSync(params.id);
 
   useEffect(() => {
     const fetchDocument = async () => {

@@ -1,4 +1,5 @@
 import type { Annotation, CreateAnnotationInput, UpdateAnnotationInput } from "@cookednote/shared/types";
+import { useSyncStore } from "@cookednote/shared/stores/sync-store";
 
 export async function fetchAnnotations(documentId: string): Promise<Annotation[]> {
   const res = await fetch(`/api/annotations?documentId=${documentId}`);
@@ -39,4 +40,21 @@ export async function deleteAnnotation(id: string): Promise<void> {
   if (!res.ok) {
     throw new Error("Failed to delete annotation");
   }
+}
+
+/**
+ * Sync-aware annotation wrappers.
+ * These perform optimistic local updates and enqueue sync actions
+ * so changes persist even when offline.
+ */
+export function createAnnotationSynced(input: CreateAnnotationInput): void {
+  useSyncStore.getState().enqueueAction("annotation", "", "create", input as unknown as Record<string, unknown>);
+}
+
+export function updateAnnotationSynced(id: string, input: UpdateAnnotationInput): void {
+  useSyncStore.getState().enqueueAction("annotation", id, "update", input as unknown as Record<string, unknown>);
+}
+
+export function deleteAnnotationSynced(id: string): void {
+  useSyncStore.getState().enqueueAction("annotation", id, "delete", {});
 }

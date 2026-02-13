@@ -7,6 +7,7 @@ const updateFolderSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   color: z.string().optional(),
   parentId: z.string().uuid().nullable().optional(),
+  syncVersion: z.number().int().optional(),
 });
 
 export async function PATCH(
@@ -66,9 +67,22 @@ export async function PATCH(
       }
     }
 
+    // Conflict detection
+    if (
+      parsed.data.syncVersion !== undefined &&
+      folder.syncVersion !== parsed.data.syncVersion
+    ) {
+      return NextResponse.json(
+        { error: "Conflict", serverEntity: folder },
+        { status: 409 }
+      );
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { syncVersion: _sv, ...updateData } = parsed.data;
     const updated = await db.folder.update({
       where: { id: params.id },
-      data: parsed.data,
+      data: { ...updateData, syncVersion: { increment: 1 } },
       include: { _count: { select: { documents: true } } },
     });
 

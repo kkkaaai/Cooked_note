@@ -38,6 +38,7 @@ import { HIGHLIGHT_COLORS, STROKE_COLORS, STROKE_SIZES } from "@cookednote/share
 import { useDrawingStore } from "@cookednote/shared/stores/drawing-store";
 import { deleteAnnotation as deleteAnnotationApi } from "@/lib/annotations";
 import { useToast } from "@/hooks/use-toast";
+import { SyncIndicator } from "@/components/ui/sync-indicator";
 
 interface PDFToolbarProps {
   title: string;
@@ -409,8 +410,10 @@ export function PDFToolbar({ title }: PDFToolbarProps) {
             </Button>
           </div>
 
-          {/* Right: Zoom controls + Pin */}
+          {/* Right: Sync status + Zoom controls + Pin */}
           <div className="flex items-center gap-1">
+            <SyncIndicator />
+            <div className="mx-1 h-6 w-px bg-border" />
             <Button variant="ghost" size="icon" onClick={zoomOut} disabled={scale <= 0.5}>
               <ZoomOut className="h-4 w-4" />
             </Button>

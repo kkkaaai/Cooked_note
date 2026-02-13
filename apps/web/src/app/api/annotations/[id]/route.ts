@@ -27,6 +27,7 @@ const updateAnnotationSchema = z.object({
       z.object({ strokes: z.array(drawingStrokeSchema) }),
     ])
     .optional(),
+  syncVersion: z.number().int().optional(),
 });
 
 export async function PATCH(
@@ -52,9 +53,22 @@ export async function PATCH(
       return new NextResponse("Not found", { status: 404 });
     }
 
+    // Conflict detection: if client sends syncVersion, check it matches
+    if (
+      validated.syncVersion !== undefined &&
+      annotation.syncVersion !== validated.syncVersion
+    ) {
+      return NextResponse.json(
+        { error: "Conflict", serverEntity: annotation },
+        { status: 409 }
+      );
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { syncVersion: _sv, ...updateData } = validated;
     const updated = await db.annotation.update({
       where: { id: params.id },
-      data: validated,
+      data: { ...updateData, syncVersion: { increment: 1 } },
     });
 
     return NextResponse.json(updated);

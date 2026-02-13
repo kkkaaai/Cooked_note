@@ -164,8 +164,8 @@ goodnotes-clone/
 │   │   │   ├── (dashboard)/dashboard, document/[id]
 │   │   │   └── api/ (documents, annotations, ai, folders, conversations)
 │   │   ├── components/ (ui/, pdf/, ai/, folders/, history/, layout/)
-│   │   ├── lib/ (db, auth, pdf, ai, ai-client, annotations, screenshot, storage)
-│   │   ├── hooks/ (use-ai-chat, use-keyboard-shortcuts, use-region-select, use-text-selection, use-toast)
+│   │   ├── lib/ (db, auth, pdf, ai, ai-client, annotations, screenshot, storage, sync-*, supabase-client)
+│   │   ├── hooks/ (use-ai-chat, use-keyboard-shortcuts, use-region-select, use-text-selection, use-toast, use-sync, use-drawing-save)
 │   │   ├── stores/ (folder-store, conversation-store)
 │   │   └── middleware.ts
 │   ├── prisma/ (schema.prisma, migrations/)
@@ -175,17 +175,17 @@ goodnotes-clone/
 ├── packages/shared/             # Cross-platform business logic
 │   └── src/
 │       ├── types/index.ts       # All TypeScript interfaces and constants
-│       ├── stores/              # pdf-store, annotation-store, ai-store (+tests)
-│       └── lib/                 # utils (cn), ai-prompts (pure prompt builders)
+│       ├── stores/              # pdf-store, annotation-store, ai-store, drawing-store, sync-store (+tests)
+│       └── lib/                 # utils (cn), ai-prompts, stroke-renderer, sync-adapter
 ├── apps/mobile/                 # Expo mobile app
 │   ├── app/
 │   │   ├── _layout.tsx          # Root Stack layout with Clerk auth
 │   │   ├── (auth)/              # Sign-in, sign-up screens
 │   │   ├── (tabs)/              # Library, Recent, Settings tabs
 │   │   └── document/[id].tsx    # Full-screen PDF viewer
-│   ├── components/              # PDFViewer, PDFToolbar, ThumbnailSidebar, DocumentGrid, DocumentCard, EmptyState
-│   ├── hooks/                   # use-documents
-│   ├── lib/                     # api, pdf-cache, constants
+│   ├── components/              # PDFViewer, PDFToolbar, ThumbnailSidebar, DocumentGrid, DocumentCard, EmptyState, SyncIndicator, DrawingCanvas, DrawingToolbar
+│   ├── hooks/                   # use-documents, use-drawing-save, use-sync
+│   ├── lib/                     # api, pdf-cache, constants, sync-*, background-sync
 │   ├── app.json, metro.config.js, babel.config.js
 │   └── package.json (@cookednote/mobile)
 ├── turbo.json
@@ -280,13 +280,13 @@ goodnotes-clone/
 - [ ] Optimize to <16ms latency, test on real iPad with Apple Pencil
 
 ### Phase 11: Sync & Cloud (Week 6)
-- [ ] Implement SyncQueue in packages/shared/ (offline-first)
-- [ ] Add background sync worker (expo-task-manager)
-- [ ] Supabase Realtime subscriptions for cross-device sync
-- [ ] Conflict resolution (last-write-wins for metadata, OT for strokes)
+- [x] Implement SyncQueue in packages/shared/ (offline-first)
+- [x] Add background sync worker (expo-task-manager)
+- [x] Supabase Realtime subscriptions for cross-device sync
+- [x] Conflict resolution (last-write-wins with syncVersion)
 - [ ] Test offline → online recovery
-- [ ] Sync status indicators in UI
-- [ ] Add DrawingStroke + SyncAction to Prisma schema
+- [x] Sync status indicators in UI
+- [x] Add syncVersion + updatedAt to Prisma schema + batch sync API
 
 ### Phase 12: AI Integration Mobile (Week 7)
 - [ ] Port AI sidebar to bottom sheet (iOS native feel)
@@ -367,8 +367,11 @@ goodnotes-clone/
 - `DELETE /api/annotations/[id]` - Delete annotation
 
 ### AI
-- `POST /api/ai/explain` - Get AI explanation
-- `POST /api/ai/chat` - Continue conversation
+- `POST /api/ai/chat` - AI conversation with vision support
+
+### Sync
+- `POST /api/sync` - Batch sync actions (up to 50)
+- `GET /api/sync?since=<timestamp>` - Catch-up sync (entities modified since timestamp)
 
 ## Success Metrics
 
@@ -393,32 +396,38 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: **Phase 10 complete** (Handwriting Engine) — next up: **Phase 11** (Sync & Cloud)
+Phase: **Phase 11 complete** (Sync & Cloud) — next up: **Phase 12** (AI Integration Mobile)
 
 **What's done:**
 - Phases 1-6: Full web MVP (auth, upload, PDF viewer, highlights, AI, folders, conversations, LaTeX)
 - Phase 7: Turborepo monorepo with `apps/web/` + `packages/shared/`
 - Phase 8: Expo mobile app scaffold at `apps/mobile/` with Clerk auth, tab navigation, shared types
 - Phase 9: PDF viewer mobile (react-native-pdf, caching, document grid, thumbnails)
-- Phase 10: Handwriting Engine (cross-platform drawing):
-  - Shared: DrawingTool/Point/Stroke/Position types, AnnotationPosition union, type guards
-  - Shared: Drawing Zustand store (tool state, stroke lifecycle, undo/redo, eraser, dirty pages)
-  - Shared: Stroke renderer using perfect-freehand (outline→SVG path, opacity, blend modes)
-  - Web: DrawingLayer (Canvas2D overlay, Pointer Events, offscreen canvas, rAF animation)
-  - Web: Drawing save hook (debounced 2s save to API, load on mount)
-  - Web: PDFToolbar drawing controls (tool selector, color picker, size picker, undo/redo)
-  - Web: Keyboard shortcuts (D toggle, Ctrl+Z undo, Ctrl+Shift+Z redo)
-  - Mobile: DrawingCanvas (Skia + Gesture.Pan, pressure sensitivity, palm rejection)
-  - Mobile: DrawingToolbar (tools, colors, sizes, undo/redo)
-  - Mobile: Drawing save hook (same API-based persistence)
-  - API: Updated annotation routes to accept "drawing" type with DrawingPosition
-  - Cross-store: Drawing/Highlight/AI modes mutually exclusive via callbacks
+- Phase 10: Handwriting Engine (cross-platform drawing)
+- Phase 11: Sync & Cloud (offline-first):
+  - Shared: Sync types (SyncAction, SyncStatus, SyncEntityType, SyncActionType)
+  - Shared: Adapter interfaces (SyncPersistenceAdapter, SyncNetworkAdapter, SyncApiAdapter)
+  - Shared: Sync Zustand store (enqueue, flush, conflict resolution, retry with exponential backoff)
+  - Shared: mergeAnnotation (LWW) in annotation store
+  - Web: IndexedDB persistence adapter, browser online/offline network adapter, REST API adapter
+  - Web: Supabase Realtime client for cross-device annotation sync
+  - Web: useSync hook (configure adapters, Realtime subscription, periodic flush)
+  - Web: SyncIndicator component (Cloud/Syncing/Offline/Error states)
+  - Mobile: SQLite persistence adapter (expo-sqlite), NetInfo network adapter, REST API adapter
+  - Mobile: useSync hook + background sync worker (expo-task-manager, 15min intervals)
+  - Mobile: SyncIndicator component (React Native)
+  - API: Batch sync endpoint (POST /api/sync) + catch-up endpoint (GET /api/sync?since=)
+  - API: syncVersion conflict detection (409 Conflict) on annotations, documents, folders
+  - Schema: Added syncVersion to Annotation, Document, Folder; updatedAt to Document
+  - Sync-aware annotation wrappers for offline-first creates/updates/deletes
 - App: CookedNote | Bundle ID: `com.cookednote.app` | SDK: Expo 52
-- 289 tests passing (159 shared + 130 web) | All 3 workspaces typecheck clean | Build passes
+- 309 tests passing (179 shared + 130 web) | All 3 workspaces typecheck clean | Build passes
 
 **What's next:**
-- Phase 11: Sync & Cloud (offline-first queue, background sync, Supabase Realtime)
-- Still need device testing for Phase 9+10 (iOS Simulator, real iPad with Apple Pencil)
+- Phase 12: AI Integration Mobile (bottom sheet, screenshot capture, streaming SSE)
+- Still need device testing for Phase 9-11 (iOS Simulator, real iPad with Apple Pencil)
+- Still need `prisma db push` when Supabase is reachable (to apply syncVersion/updatedAt columns)
+- Enable Supabase Realtime on Annotation, Document, Folder tables in Supabase dashboard
 - Performance optimization for drawing (<16ms latency target)
 
 **Open questions:**

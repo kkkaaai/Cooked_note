@@ -23,6 +23,7 @@ interface AnnotationActions {
   addAnnotation: (annotation: Annotation) => void;
   removeAnnotation: (id: string) => void;
   updateAnnotation: (id: string, updates: Partial<Annotation>) => void;
+  mergeAnnotation: (serverAnnotation: Annotation) => void;
   selectAnnotation: (id: string | null) => void;
   setActiveColor: (color: HighlightColor) => void;
   toggleHighlightMode: () => void;
@@ -62,6 +63,25 @@ export const useAnnotationStore = create<AnnotationStore>((set, get) => ({
         a.id === id ? { ...a, ...updates } : a
       ),
     }),
+
+  mergeAnnotation: (serverAnnotation) => {
+    const existing = get().annotations.find((a) => a.id === serverAnnotation.id);
+    if (!existing) {
+      // New annotation from server — add it
+      set({ annotations: [...get().annotations, serverAnnotation] });
+      return;
+    }
+    // LWW: accept server version if syncVersion is higher
+    const serverVersion = serverAnnotation.syncVersion ?? 0;
+    const localVersion = existing.syncVersion ?? 0;
+    if (serverVersion > localVersion) {
+      set({
+        annotations: get().annotations.map((a) =>
+          a.id === serverAnnotation.id ? { ...a, ...serverAnnotation } : a
+        ),
+      });
+    }
+  },
 
   selectAnnotation: (id) => set({ selectedAnnotationId: id }),
 
