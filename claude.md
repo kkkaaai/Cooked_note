@@ -301,14 +301,19 @@ goodnotes-clone/
 - [x] Conversation history (load, delete saved conversations)
 
 ### Phase 13: Monetization (Week 8)
+- [x] Add Subscription + UsageRecord models to Prisma schema
+- [x] Subscription types, constants, utility functions in shared types
+- [x] Shared Zustand subscription-store with adapter injection pattern
+- [x] Server-side quota library (check/increment document + AI usage)
+- [x] Subscription status API (GET /api/subscription)
+- [x] Quota enforcement on upload + AI routes (402 on exceeded)
+- [x] Stripe integration (checkout, portal, webhook handler)
+- [x] RevenueCat integration (webhook handler, SDK wrapper)
+- [x] Web subscription UI (paywall dialog, upgrade banner, settings page, badge)
+- [x] Mobile subscription UI (paywall screen, settings subscription section)
+- [x] Security hardening (timing-safe auth, TOCTOU fix, UUID validation)
+- [ ] Test purchase flow in sandbox (Stripe test mode + RevenueCat sandbox)
 - [ ] Set up App Store Connect + Google Play Console
-- [ ] Create IAP products (Pro monthly $7.99, yearly $49.99)
-- [ ] Implement paywalls (free: 3 docs, 10 AI/month; pro: unlimited)
-- [ ] Subscription store in packages/shared/
-- [ ] Receipt validation (server-side)
-- [ ] "Restore Purchases" flow
-- [ ] Add Subscription model to Prisma schema
-- [ ] Test purchase flow in sandbox
 
 ### Phase 14: Polish & Launch Prep (Week 9-10)
 - [ ] Run full testing checklist (iPad Pencil, iPhone, Android)
@@ -377,6 +382,13 @@ goodnotes-clone/
 - `POST /api/sync` - Batch sync actions (up to 50)
 - `GET /api/sync?since=<timestamp>` - Catch-up sync (entities modified since timestamp)
 
+### Subscription
+- `GET /api/subscription` - Get subscription + usage status
+- `POST /api/stripe/checkout` - Create Stripe Checkout Session
+- `POST /api/stripe/portal` - Create Stripe Billing Portal Session
+- `POST /api/webhooks/stripe` - Stripe webhook handler
+- `POST /api/webhooks/revenuecat` - RevenueCat webhook handler
+
 ## Success Metrics
 
 ### MVP Success Criteria
@@ -400,7 +412,7 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: **Phase 12 complete** (AI Integration Mobile) — next up: **Phase 13** (Monetization)
+Phase: **Phase 13 complete** (Monetization) — next up: **Phase 14** (Polish & Launch Prep)
 
 **What's done:**
 - Phases 1-6: Full web MVP (auth, upload, PDF viewer, highlights, AI, folders, conversations, LaTeX)
@@ -409,26 +421,25 @@ Phase: **Phase 12 complete** (AI Integration Mobile) — next up: **Phase 13** (
 - Phase 9: PDF viewer mobile (react-native-pdf, caching, document grid, thumbnails)
 - Phase 10: Handwriting Engine (cross-platform drawing)
 - Phase 11: Sync & Cloud (offline-first sync queue, Supabase Realtime, batch sync API)
-- Phase 12: AI Integration Mobile:
-  - AIBottomSheet (@gorhom/bottom-sheet v5 with 3 snap points, swipe-to-dismiss)
-  - RegionSelectOverlay (gesture-handler Pan + reanimated for 60fps selection)
-  - Screenshot capture (react-native-view-shot + expo-image-manipulator crop/resize)
-  - SSE stream client (parseSSEStream adapted for mobile with apiFetch auth)
-  - useAIChat hook (mirrors web: builds ContentBlocks, streams to AI store)
-  - MessageBubble with react-native-markdown-display + long-press copy/share
-  - ScreenshotCarousel (horizontal strip, preview modal, remove button)
-  - ConversationHistory (load/delete saved conversations in bottom sheet)
-  - Mobile conversation store (mirrors web with token provider pattern)
-  - PDFToolbar Sparkles button (mutual exclusion with drawing mode via shared store)
-  - Copy/share via expo-clipboard + RN Share with haptic feedback
+- Phase 12: AI Integration Mobile (bottom sheet, region select, screenshots, streaming, conversations)
+- Phase 13: Monetization:
+  - Prisma Subscription + UsageRecord models
+  - Shared subscription-store (Zustand) with platform-specific fetch adapters
+  - Server-side quota enforcement on upload (402 + TOCTOU-safe increment/rollback) and AI routes
+  - Stripe integration: checkout sessions, billing portal, webhook handler (v20 compatible)
+  - RevenueCat integration: webhook handler (timing-safe auth, UUID validation), SDK wrapper
+  - Web UI: paywall dialog, upgrade banner, subscription badge, settings page
+  - Mobile UI: paywall screen (RevenueCat purchase/restore), settings subscription section
+  - Security: timing-safe webhook auth, TOCTOU race prevention, UUID validation, env var docs
 - App: CookedNote | Bundle ID: `com.cookednote.app` | SDK: Expo 52
-- 309 tests passing (179 shared + 130 web) | All 3 workspaces typecheck clean
+- 344 tests passing (199 shared + 145 web) | All 3 workspaces typecheck clean
 
 **What's next:**
-- Phase 13: Monetization (IAP, paywalls, subscription model)
-- Still need device testing for Phase 9-12 (iOS Simulator, real iPad with Apple Pencil)
-- Still need `prisma db push` when Supabase is reachable (to apply syncVersion/updatedAt columns)
+- Phase 14: Polish & Launch Prep (testing, bug fixes, performance, screenshots, beta)
+- Still need device testing for Phase 9-13 (iOS Simulator, real iPad with Apple Pencil)
+- Still need `prisma db push` when Supabase is reachable (to apply Subscription/UsageRecord + syncVersion columns)
 - Enable Supabase Realtime on Annotation, Document, Folder tables in Supabase dashboard
+- Test Stripe checkout + RevenueCat sandbox purchase flows
 - Performance optimization for drawing (<16ms latency target)
 
 **Open questions:**
@@ -437,7 +448,6 @@ Phase: **Phase 12 complete** (AI Integration Mobile) — next up: **Phase 13** (
 3. Beta tester access? (need real iPad users)
 4. Design assets ready? (app icon, screenshots)
 5. Legal review completed? (privacy policy, ToS)
-6. Pricing finalized? (affects IAP setup)
 
 ## Decisions Log
 - 2026-02-05: Chose Next.js App Router for better server components
@@ -517,3 +527,9 @@ Phase: **Phase 12 complete** (AI Integration Mobile) — next up: **Phase 13** (
 - 2026-02-14: Mobile conversation store uses token provider pattern: `setConversationTokenProvider(getToken)` initialized in _layout.tsx
 - 2026-02-14: react-native-markdown-display for AI responses; LaTeX skipped for v1 (renders as inline code)
 - 2026-02-14: GestureHandlerRootView wraps document screen for bottom sheet + region selection gesture coordination
+- 2026-02-15: Stripe SDK v20 breaking changes — `current_period_start/end` moved to SubscriptionItem, `Invoice.subscription` moved to `Invoice.parent.subscription_details`
+- 2026-02-15: Monetization uses dual provider architecture: Stripe (web) + RevenueCat (mobile) write to same Subscription table with `provider` discriminator
+- 2026-02-15: Quota enforcement uses TOCTOU-safe pattern: increment BEFORE upload, rollback on failure via `decrementDocumentUsage`
+- 2026-02-15: RevenueCat webhook auth uses `crypto.timingSafeEqual` + UUID regex validation on `app_user_id`
+- 2026-02-15: Subscription store uses adapter injection pattern (same as sync-store) for platform-specific fetch
+- 2026-02-15: Free tier: 3 docs + 10 AI requests/month; Pro: $7.99/mo or $49.99/yr, unlimited

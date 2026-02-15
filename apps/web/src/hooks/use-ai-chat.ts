@@ -2,9 +2,10 @@
 
 import { useCallback, useRef } from "react";
 import { useAIStore } from "@cookednote/shared/stores/ai-store";
+import { useSubscriptionStore } from "@cookednote/shared/stores/subscription-store";
 import { streamChat } from "@/lib/ai-client";
 import { dataUrlToBase64 } from "@/lib/screenshot";
-import type { AIMessage, ContentBlock, Screenshot } from "@cookednote/shared/types";
+import type { AIMessage, ContentBlock, Screenshot, QuotaExceededError } from "@cookednote/shared/types";
 
 export function useAIChat() {
   const abortRef = useRef<AbortController | null>(null);
@@ -54,6 +55,17 @@ export function useAIChat() {
         (delta) => useAIStore.getState().appendStreamingText(delta),
         () => useAIStore.getState().finalizeStreaming(),
         (error) => {
+          // Parse quota errors from 402 responses
+          try {
+            const parsed = JSON.parse(error) as QuotaExceededError;
+            if (parsed.error === "quota_exceeded") {
+              useAIStore.getState().setError("quota_exceeded");
+              useAIStore.getState().setStreaming(false);
+              return;
+            }
+          } catch {
+            // Not a quota error, use as-is
+          }
           useAIStore.getState().setError(error);
           useAIStore.getState().setStreaming(false);
         },

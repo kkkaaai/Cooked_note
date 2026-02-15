@@ -19,6 +19,42 @@ model User {
   annotations   Annotation[]
   folders       Folder[]
   conversations Conversation[]
+  subscription  Subscription?
+  usageRecords  UsageRecord[]
+}
+
+model Subscription {
+  id                 String    @id @default(uuid())
+  userId             String    @unique
+  provider           String // "stripe" | "revenuecat"
+  providerCustomerId String?
+  providerSubId      String?
+  plan               String    @default("free") // "free" | "pro_monthly" | "pro_yearly"
+  status             String    @default("active") // "active" | "canceled" | "expired" | "past_due"
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([providerCustomerId])
+  @@index([providerSubId])
+}
+
+model UsageRecord {
+  id              String   @id @default(uuid())
+  userId          String
+  periodStart     DateTime
+  documentUploads Int      @default(0)
+  aiRequests      Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodStart])
+  @@index([userId])
 }
 
 model Document {

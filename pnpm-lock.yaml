@@ -95,6 +95,9 @@ importers:
       react-native-pdf:
         specifier: 6.7.6
         version: 6.7.6(react-native-blob-util@0.24.7(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)
+      react-native-purchases:
+        specifier: ^9.9.0
+        version: 9.9.0(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)
       react-native-reanimated:
         specifier: ^3.16.7
         version: 3.16.7(@babel/core@7.29.0)(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)
@@ -159,6 +162,9 @@ importers:
       '@radix-ui/react-toast':
         specifier: ^1.2.15
         version: 1.2.15(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@stripe/stripe-js':
+        specifier: ^8.7.0
+        version: 8.7.0
       '@supabase/supabase-js':
         specifier: ^2.95.2
         version: 2.95.3(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -210,6 +216,9 @@ importers:
       remark-math:
         specifier: ^6.0.0
         version: 6.0.0
+      stripe:
+        specifier: ^20.3.1
+        version: 20.3.1(@types/node@20.19.33)
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
@@ -2370,6 +2379,15 @@ packages:
   '@react-navigation/routers@7.5.3':
     resolution: {integrity: sha512-1tJHg4KKRJuQ1/EvJxatrMef3NZXEPzwUIUZ3n1yJ2t7Q97siwRtbynRpQG9/69ebbtiZ8W3ScOZF/OmhvM4Rg==}
 
+  '@revenuecat/purchases-js-hybrid-mappings@17.37.0':
+    resolution: {integrity: sha512-hRmVpdqsB8wIOoxjnlcplFU0gyo0h69iZJCs75OQEpdfhQll+mlcjy15/1rvRnQe2BFBWI/Xeu5AR1dMwt1YBw==}
+
+  '@revenuecat/purchases-js@1.25.1':
+    resolution: {integrity: sha512-RAW+iyBVgS7qiuSb2uWvzojkIdwxeIwiP1fGs+Wz8AiDu87KrQPga0PdZVQ0GlniMDb9lnhIzZFnHQkui7tuyQ==}
+
+  '@revenuecat/purchases-typescript-internal@17.37.0':
+    resolution: {integrity: sha512-W409qJpuZ6ec6GCymQcDUL3eK8BiWLYk5feDmfv88Eb6jBCwNjifgKISCR/MdVIZwC36ZNXmV4pkPZd+Mrjh+w==}
+
   '@rolldown/pluginutils@1.0.0-rc.2':
     resolution: {integrity: sha512-izyXV/v+cHiRfozX62W9htOAvwMo4/bXKDrQ+vom1L1qRuexPock/7VZDAhnpHCLNejd3NJ6hiab+tO0D44Rgw==}
 
@@ -2677,6 +2695,10 @@ packages:
 
   '@stripe/stripe-js@5.6.0':
     resolution: {integrity: sha512-w8CEY73X/7tw2KKlL3iOk679V9bWseE4GzNz3zlaYxcTjmcmWOathRb0emgo/QQ3eoNzmq68+2Y2gxluAv3xGw==}
+    engines: {node: '>=12.16'}
+
+  '@stripe/stripe-js@8.7.0':
+    resolution: {integrity: sha512-tNUerSstwNC1KuHgX4CASGO0Md3CB26IJzSXmVlSuFvhsBP4ZaEPpY4jxWOn9tfdDscuVT4Kqb8cZ2o9nLCgRQ==}
     engines: {node: '>=12.16'}
 
   '@supabase/auth-js@2.95.3':
@@ -6594,6 +6616,16 @@ packages:
       react-native: '*'
       react-native-blob-util: '>=0.13.7'
 
+  react-native-purchases@9.9.0:
+    resolution: {integrity: sha512-tXpkGiOPal/G4+vxxu2dZFkARWqyQ4cQbH1Z1InBhrNwKyybzQC4f5Ufd1YeQaYOMwWrDOFtU7S4/vmeK/aQNg==}
+    peerDependencies:
+      react: '>= 16.6.3'
+      react-native: '>= 0.73.0'
+      react-native-web: '*'
+    peerDependenciesMeta:
+      react-native-web:
+        optional: true
+
   react-native-reanimated@3.16.7:
     resolution: {integrity: sha512-qoUUQOwE1pHlmQ9cXTJ2MX9FQ9eHllopCLiWOkDkp6CER95ZWeXhJCP4cSm6AD4jigL5jHcZf/SkWrg8ttZUsw==}
     peerDependencies:
@@ -7208,6 +7240,15 @@ packages:
   strip-json-comments@3.1.1:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
+
+  stripe@20.3.1:
+    resolution: {integrity: sha512-k990yOT5G5rhX3XluRPw5Y8RLdJDW4dzQ29wWT66piHrbnM2KyamJ1dKgPsw4HzGHRWjDiSSdcI2WdxQUPV3aQ==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@types/node': '>=16'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
 
   structured-headers@0.4.1:
     resolution: {integrity: sha512-0MP/Cxx5SzeeZ10p/bZI0S6MpgD+yxAhi1BOQ34jgnMXsCq3j1t6tQnZu+KdlL7dvJTLT3g9xN8tl10TqgFMcg==}
@@ -10652,6 +10693,14 @@ snapshots:
     dependencies:
       nanoid: 3.3.11
 
+  '@revenuecat/purchases-js-hybrid-mappings@17.37.0':
+    dependencies:
+      '@revenuecat/purchases-js': 1.25.1
+
+  '@revenuecat/purchases-js@1.25.1': {}
+
+  '@revenuecat/purchases-typescript-internal@17.37.0': {}
+
   '@rolldown/pluginutils@1.0.0-rc.2': {}
 
   '@rollup/rollup-android-arm-eabi@4.57.1':
@@ -11003,6 +11052,8 @@ snapshots:
   '@standard-schema/utils@0.3.0': {}
 
   '@stripe/stripe-js@5.6.0': {}
+
+  '@stripe/stripe-js@8.7.0': {}
 
   '@supabase/auth-js@2.95.3':
     dependencies:
@@ -15610,6 +15661,13 @@ snapshots:
       react-native: 0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10)
       react-native-blob-util: 0.24.7(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)
 
+  react-native-purchases@9.9.0(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1):
+    dependencies:
+      '@revenuecat/purchases-js-hybrid-mappings': 17.37.0
+      '@revenuecat/purchases-typescript-internal': 17.37.0
+      react: 18.3.1
+      react-native: 0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10)
+
   react-native-reanimated@3.16.7(@babel/core@7.29.0)(react-native@0.76.9(@babel/core@7.29.0)(@babel/preset-env@7.29.0(@babel/core@7.29.0))(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1):
     dependencies:
       '@babel/core': 7.29.0
@@ -16364,6 +16422,10 @@ snapshots:
   strip-json-comments@2.0.1: {}
 
   strip-json-comments@3.1.1: {}
+
+  stripe@20.3.1(@types/node@20.19.33):
+    optionalDependencies:
+      '@types/node': 20.19.33
 
   structured-headers@0.4.1: {}
 

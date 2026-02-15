@@ -12,6 +12,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useSubscriptionStore } from "@cookednote/shared/stores/subscription-store";
+import { PaywallDialog } from "@/components/ui/paywall-dialog";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -25,6 +27,7 @@ export function UploadDialog({ onUploadComplete }: UploadDialogProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -73,6 +76,12 @@ export function UploadDialog({ onUploadComplete }: UploadDialogProps) {
   const handleUpload = async () => {
     if (!file) return;
 
+    // Client-side quota check
+    if (!useSubscriptionStore.getState().canUploadDocument()) {
+      setShowPaywall(true);
+      return;
+    }
+
     setUploading(true);
     setError(null);
 
@@ -85,10 +94,19 @@ export function UploadDialog({ onUploadComplete }: UploadDialogProps) {
         body: formData,
       });
 
+      if (res.status === 402) {
+        setShowPaywall(true);
+        setUploading(false);
+        return;
+      }
+
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error || "Upload failed");
       }
+
+      // Update local usage count
+      useSubscriptionStore.getState().incrementUsage("documentUploads");
 
       toast({ title: "PDF uploaded successfully" });
       setOpen(false);
@@ -195,6 +213,8 @@ export function UploadDialog({ onUploadComplete }: UploadDialogProps) {
           </Button>
         </div>
       </DialogContent>
+
+      <PaywallDialog open={showPaywall} onOpenChange={setShowPaywall} />
     </Dialog>
   );
 }

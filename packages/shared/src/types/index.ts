@@ -248,6 +248,57 @@ export interface CreateConversationInput {
   messages: { role: "user" | "assistant"; content: string; screenshots?: Screenshot[] }[];
 }
 
+// Subscription types
+export type SubscriptionPlan = "free" | "pro_monthly" | "pro_yearly";
+export type SubscriptionStatusValue = "active" | "canceled" | "expired" | "past_due";
+export type SubscriptionProvider = "stripe" | "revenuecat";
+
+export interface SubscriptionInfo {
+  plan: SubscriptionPlan;
+  status: SubscriptionStatusValue;
+  provider: SubscriptionProvider | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+}
+
+export interface UsageInfo {
+  documentUploads: number;
+  aiRequests: number;
+  periodStart: string;
+}
+
+export interface QuotaExceededError {
+  error: "quota_exceeded";
+  resource: "documents" | "ai_requests";
+  current: number;
+  limit: number;
+  plan: SubscriptionPlan;
+}
+
+export const FREE_TIER_LIMITS = {
+  maxDocuments: 3,
+  maxAIRequestsPerMonth: 10,
+} as const;
+
+export const PRO_TIER_LIMITS = {
+  maxDocuments: Infinity,
+  maxAIRequestsPerMonth: Infinity,
+} as const;
+
+/** Prices in cents (e.g. 799 = $7.99) for percentage calculations */
+export const PLAN_PRICES = {
+  pro_monthly: { amount: 799, label: "$7.99/mo" },
+  pro_yearly: { amount: 4999, label: "$49.99/yr" },
+} as const;
+
+export function isPro(plan: SubscriptionPlan): boolean {
+  return plan === "pro_monthly" || plan === "pro_yearly";
+}
+
+export function getTierLimits(plan: SubscriptionPlan) {
+  return isPro(plan) ? PRO_TIER_LIMITS : FREE_TIER_LIMITS;
+}
+
 // Sync types
 export type SyncStatus = "idle" | "syncing" | "error" | "offline";
 export type SyncActionType = "create" | "update" | "delete";

@@ -7,6 +7,8 @@ import { colors } from "@/lib/constants";
 import { useSync } from "@/hooks/use-sync";
 import { registerBackgroundSync } from "@/lib/background-sync";
 import { setConversationTokenProvider } from "@/stores/conversation-store";
+import { initSubscriptionAdapter } from "@/lib/subscription-adapter-mobile";
+import { useSubscriptionStore } from "@cookednote/shared/stores/subscription-store";
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -22,11 +24,17 @@ function AuthGate() {
   // Initialize sync system
   useSync();
 
-  // Initialize conversation store token provider + register background sync
+  // Initialize conversation store token provider, subscription, + register background sync
   useEffect(() => {
     if (isSignedIn) {
       setConversationTokenProvider(getToken);
       registerBackgroundSync();
+
+      // Init subscription store
+      getToken().then((token) => {
+        initSubscriptionAdapter(token);
+        useSubscriptionStore.getState().fetchSubscriptionStatus();
+      });
     }
   }, [isSignedIn, getToken]);
 
@@ -57,6 +65,10 @@ function AuthGate() {
       <Stack.Screen
         name="document/[id]"
         options={{ animation: "slide_from_right" }}
+      />
+      <Stack.Screen
+        name="paywall"
+        options={{ presentation: "modal", animation: "slide_from_bottom" }}
       />
     </Stack>
   );

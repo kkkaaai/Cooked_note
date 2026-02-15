@@ -5,6 +5,7 @@ import { FileText, Loader2 } from "lucide-react";
 import { UploadDialog } from "@/components/pdf/UploadDialog";
 import { DocumentCard } from "@/components/pdf/DocumentCard";
 import { FolderSidebar } from "@/components/folders/FolderSidebar";
+import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { useToast } from "@/hooks/use-toast";
 import { useFolderStore } from "@/stores/folder-store";
 import type { DocumentMeta } from "@cookednote/shared/types";
@@ -108,6 +109,10 @@ export function DocumentList({ userName }: DocumentListProps) {
             </p>
           </div>
           <UploadDialog onUploadComplete={fetchDocuments} />
+        </div>
+
+        <div className="mt-6">
+          <UpgradeBanner />
         </div>
 
         {loading ? (

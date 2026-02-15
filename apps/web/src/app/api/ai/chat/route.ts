@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAnthropicClient, getRelevantContextForPages, buildVisionSystemPrompt } from "@/lib/ai";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { checkAIQuota, incrementAIUsage } from "@/lib/quota";
 
 const contentBlockSchema = z.union([
   z.object({
@@ -44,6 +45,15 @@ export async function POST(req: NextRequest) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    // Look up internal user for quota check
+    const user = await db.user.findUnique({ where: { clerkId: userId } });
+    if (user) {
+      const quotaError = await checkAIQuota(user.id);
+      if (quotaError) {
+        return NextResponse.json(quotaError, { status: 402 });
+      }
+    }
+
     const body = await req.json();
     const { documentId, messages } = chatSchema.parse(body);
 
@@ -83,7 +93,13 @@ export async function POST(req: NextRequest) {
             );
           });
 
-          messageStream.on("end", () => {
+          messageStream.on("end", async () => {
+            // Increment usage only on successful completion
+            if (user) {
+              await incrementAIUsage(user.id).catch((err) => {
+                console.error("[AI_CHAT] Failed to increment usage", err);
+              });
+            }
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
             controller.close();
           });

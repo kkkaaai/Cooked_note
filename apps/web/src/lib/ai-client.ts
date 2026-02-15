@@ -80,6 +80,15 @@ export async function streamChat(
     });
 
     if (!res.ok) {
+      if (res.status === 402) {
+        try {
+          const quota = await res.json();
+          onError(JSON.stringify(quota));
+        } catch {
+          onError("Quota exceeded");
+        }
+        return;
+      }
       const errorText = await res.text();
       onError(errorText || "Failed to send message");
       return;
