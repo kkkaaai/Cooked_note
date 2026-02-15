@@ -1,9 +1,10 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ChevronLeft, LayoutGrid, Pencil } from "lucide-react-native";
+import { ChevronLeft, LayoutGrid, Pencil, Sparkles } from "lucide-react-native";
 import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
 import { useDrawingStore } from "@cookednote/shared/stores/drawing-store";
+import { useAIStore } from "@cookednote/shared/stores/ai-store";
 import { colors } from "@/lib/constants";
 
 interface PDFToolbarProps {
@@ -18,6 +19,8 @@ export function PDFToolbar({ title, onToggleThumbnails }: PDFToolbarProps) {
   const numPages = usePDFStore((s) => s.numPages);
   const isDrawingMode = useDrawingStore((s) => s.isDrawingMode);
   const toggleDrawingMode = useDrawingStore((s) => s.toggleDrawingMode);
+  const isAIMode = useAIStore((s) => s.isAIMode);
+  const toggleAIMode = useAIStore((s) => s.toggleAIMode);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -45,12 +48,21 @@ export function PDFToolbar({ title, onToggleThumbnails }: PDFToolbarProps) {
 
         <Pressable
           onPress={toggleDrawingMode}
-          style={[styles.drawButton, isDrawingMode && styles.drawButtonActive]}
+          style={[styles.toolButton, isDrawingMode && styles.toolButtonActive]}
           hitSlop={8}
           accessibilityLabel="Toggle drawing mode"
           accessibilityRole="button"
         >
           <Pencil color={isDrawingMode ? "#ffffff" : colors.primary} size={20} />
+        </Pressable>
+        <Pressable
+          onPress={toggleAIMode}
+          style={[styles.toolButton, isAIMode && styles.toolButtonActive]}
+          hitSlop={8}
+          accessibilityLabel="Toggle AI mode"
+          accessibilityRole="button"
+        >
+          <Sparkles color={isAIMode ? "#ffffff" : colors.primary} size={20} />
         </Pressable>
         <Pressable
           onPress={onToggleThumbnails}
@@ -98,14 +110,14 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 1,
   },
-  drawButton: {
+  toolButton: {
     width: 40,
     height: 40,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 8,
   },
-  drawButtonActive: {
+  toolButtonActive: {
     backgroundColor: colors.primary,
   },
   thumbnailButton: {

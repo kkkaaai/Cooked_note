@@ -1,33 +1,59 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
+import {
+  View,
+  ActivityIndicator,
+  Text,
+  useWindowDimensions,
+  StyleSheet,
+} from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import ViewShot from "react-native-view-shot";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { usePDFStore } from "@cookednote/shared/stores/pdf-store";
+import { useAIStore } from "@cookednote/shared/stores/ai-store";
+import { useDrawingStore } from "@cookednote/shared/stores/drawing-store";
 import { useApiFetch } from "@/lib/api";
 import { getCachedPDF } from "@/lib/pdf-cache";
+import { captureRegionMobile } from "@/lib/screenshot";
 import { PDFViewer } from "@/components/PDFViewer";
 import { PDFToolbar } from "@/components/PDFToolbar";
 import { ThumbnailSidebar } from "@/components/ThumbnailSidebar";
 import { DrawingToolbar } from "@/components/DrawingToolbar";
-import { useDrawingStore } from "@cookednote/shared/stores/drawing-store";
+import { RegionSelectOverlay } from "@/components/RegionSelectOverlay";
+import { AIBottomSheet } from "@/components/AIBottomSheet";
 import { useDrawingSave } from "@/hooks/use-drawing-save";
-import { colors } from "@/lib/constants";
-import type { DocumentMeta } from "@cookednote/shared/types";
+import { colors, A4_ASPECT_RATIO } from "@/lib/constants";
+import type { DocumentMeta, NormalizedRect } from "@cookednote/shared/types";
 import type Pdf from "react-native-pdf";
 
 export default function DocumentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const apiFetch = useApiFetch();
   const pdfRef = useRef<Pdf>(null);
+  const pdfViewRef = useRef<ViewShot>(null);
+  const { width: windowWidth } = useWindowDimensions();
 
   const [document, setDocument] = useState<DocumentMeta | null>(null);
   const [localPath, setLocalPath] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [showThumbnails, setShowThumbnails] = useState(false);
-  const isDrawingMode = useDrawingStore((s) => s.isDrawingMode);
 
-  // Load/save drawing annotations
+  const isDrawingMode = useDrawingStore((s) => s.isDrawingMode);
+  const isAIMode = useAIStore((s) => s.isAIMode);
+  const currentPage = usePDFStore((s) => s.currentPage);
+
   useDrawingSave(id ?? null);
+
+  // Set AI store document ID
+  useEffect(() => {
+    if (id) {
+      useAIStore.getState().setDocumentId(id);
+    }
+    return () => {
+      useAIStore.getState().reset();
+    };
+  }, [id]);
 
   const loadDocument = useCallback(async () => {
     if (!id) return;
@@ -39,7 +65,6 @@ export default function DocumentScreen() {
       const doc: DocumentMeta = await res.json();
       setDocument(doc);
 
-      // Update lastOpenedAt
       apiFetch(`/api/documents/${id}`, {
         method: "PATCH",
         body: JSON.stringify({ lastOpenedAt: new Date().toISOString() }),
@@ -68,6 +93,26 @@ export default function DocumentScreen() {
     pdfRef.current?.setPage(page);
     setShowThumbnails(false);
   }, []);
+
+  const handleRegionSelected = useCallback(
+    async (region: NormalizedRect) => {
+      if (!pdfViewRef.current) return;
+
+      const pageHeight = windowWidth * A4_ASPECT_RATIO; // approximate A4 ratio
+      const screenshot = await captureRegionMobile(
+        pdfViewRef as React.RefObject<unknown>,
+        region,
+        currentPage,
+        windowWidth,
+        pageHeight
+      );
+
+      if (screenshot) {
+        useAIStore.getState().addScreenshot(screenshot);
+      }
+    },
+    [currentPage, windowWidth]
+  );
 
   if (!id) {
     return (
@@ -99,23 +144,36 @@ export default function DocumentScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <GestureHandlerRootView style={styles.container}>
       <PDFToolbar
         title={document?.title ?? "Document"}
         onToggleThumbnails={() => setShowThumbnails((v) => !v)}
       />
-      <PDFViewer
-        ref={pdfRef}
-        localPath={localPath}
-        documentId={id}
-      />
+      <View style={styles.pdfContainer}>
+        <ViewShot ref={pdfViewRef} style={styles.viewShot}>
+          <PDFViewer
+            ref={pdfRef}
+            localPath={localPath}
+            documentId={id}
+          />
+        </ViewShot>
+        {isAIMode && !isDrawingMode && (
+          <RegionSelectOverlay
+            enabled={true}
+            pageWidth={windowWidth}
+            pageHeight={windowWidth * A4_ASPECT_RATIO}
+            onRegionSelected={handleRegionSelected}
+          />
+        )}
+      </View>
       {isDrawingMode && <DrawingToolbar />}
       <ThumbnailSidebar
         visible={showThumbnails}
         onClose={() => setShowThumbnails(false)}
         onPageSelect={handlePageSelect}
       />
-    </View>
+      <AIBottomSheet />
+    </GestureHandlerRootView>
   );
 }
 
@@ -123,6 +181,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
+  },
+  pdfContainer: {
+    flex: 1,
+    position: "relative",
+  },
+  viewShot: {
+    flex: 1,
   },
   centered: {
     flex: 1,

@@ -183,9 +183,10 @@ goodnotes-clone/
 │   │   ├── (auth)/              # Sign-in, sign-up screens
 │   │   ├── (tabs)/              # Library, Recent, Settings tabs
 │   │   └── document/[id].tsx    # Full-screen PDF viewer
-│   ├── components/              # PDFViewer, PDFToolbar, ThumbnailSidebar, DocumentGrid, DocumentCard, EmptyState, SyncIndicator, DrawingCanvas, DrawingToolbar
-│   ├── hooks/                   # use-documents, use-drawing-save, use-sync
-│   ├── lib/                     # api, pdf-cache, constants, sync-*, background-sync
+│   ├── components/              # PDFViewer, PDFToolbar, ThumbnailSidebar, DocumentGrid, DocumentCard, EmptyState, SyncIndicator, DrawingCanvas, DrawingToolbar, AIBottomSheet, MessageBubble, RegionSelectOverlay, ScreenshotCarousel, ConversationHistory
+│   ├── hooks/                   # use-documents, use-drawing-save, use-sync, use-ai-chat
+│   ├── stores/                  # conversation-store
+│   ├── lib/                     # api, pdf-cache, constants, sync-*, background-sync, ai-client, screenshot, share-utils
 │   ├── app.json, metro.config.js, babel.config.js
 │   └── package.json (@cookednote/mobile)
 ├── turbo.json
@@ -289,12 +290,15 @@ goodnotes-clone/
 - [x] Add syncVersion + updatedAt to Prisma schema + batch sync API
 
 ### Phase 12: AI Integration Mobile (Week 7)
-- [ ] Port AI sidebar to bottom sheet (iOS native feel)
-- [ ] Screenshot capture with expo-image-manipulator
-- [ ] Reuse @cookednote/shared AI prompts + streaming SSE
-- [ ] Keyboard-aware scrolling, swipe to dismiss
-- [ ] Screenshot preview carousel
-- [ ] Copy/share AI responses
+- [x] Port AI sidebar to bottom sheet (@gorhom/bottom-sheet v5)
+- [x] Screenshot capture with react-native-view-shot + expo-image-manipulator
+- [x] Reuse @cookednote/shared AI prompts + streaming SSE (mobile ai-client)
+- [x] Keyboard-aware scrolling, swipe to dismiss (bottom sheet snap points)
+- [x] Screenshot preview carousel (ScreenshotCarousel component)
+- [x] Copy/share AI responses (expo-clipboard + RN Share)
+- [x] Conversation persistence (mobile conversation store with apiFetch)
+- [x] Region selection overlay (gesture handler + reanimated)
+- [x] Conversation history (load, delete saved conversations)
 
 ### Phase 13: Monetization (Week 8)
 - [ ] Set up App Store Connect + Google Play Console
@@ -396,7 +400,7 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: **Phase 11 complete** (Sync & Cloud) — next up: **Phase 12** (AI Integration Mobile)
+Phase: **Phase 12 complete** (AI Integration Mobile) — next up: **Phase 13** (Monetization)
 
 **What's done:**
 - Phases 1-6: Full web MVP (auth, upload, PDF viewer, highlights, AI, folders, conversations, LaTeX)
@@ -404,28 +408,25 @@ Phase: **Phase 11 complete** (Sync & Cloud) — next up: **Phase 12** (AI Integr
 - Phase 8: Expo mobile app scaffold at `apps/mobile/` with Clerk auth, tab navigation, shared types
 - Phase 9: PDF viewer mobile (react-native-pdf, caching, document grid, thumbnails)
 - Phase 10: Handwriting Engine (cross-platform drawing)
-- Phase 11: Sync & Cloud (offline-first):
-  - Shared: Sync types (SyncAction, SyncStatus, SyncEntityType, SyncActionType)
-  - Shared: Adapter interfaces (SyncPersistenceAdapter, SyncNetworkAdapter, SyncApiAdapter)
-  - Shared: Sync Zustand store (enqueue, flush, conflict resolution, retry with exponential backoff)
-  - Shared: mergeAnnotation (LWW) in annotation store
-  - Web: IndexedDB persistence adapter, browser online/offline network adapter, REST API adapter
-  - Web: Supabase Realtime client for cross-device annotation sync
-  - Web: useSync hook (configure adapters, Realtime subscription, periodic flush)
-  - Web: SyncIndicator component (Cloud/Syncing/Offline/Error states)
-  - Mobile: SQLite persistence adapter (expo-sqlite), NetInfo network adapter, REST API adapter
-  - Mobile: useSync hook + background sync worker (expo-task-manager, 15min intervals)
-  - Mobile: SyncIndicator component (React Native)
-  - API: Batch sync endpoint (POST /api/sync) + catch-up endpoint (GET /api/sync?since=)
-  - API: syncVersion conflict detection (409 Conflict) on annotations, documents, folders
-  - Schema: Added syncVersion to Annotation, Document, Folder; updatedAt to Document
-  - Sync-aware annotation wrappers for offline-first creates/updates/deletes
+- Phase 11: Sync & Cloud (offline-first sync queue, Supabase Realtime, batch sync API)
+- Phase 12: AI Integration Mobile:
+  - AIBottomSheet (@gorhom/bottom-sheet v5 with 3 snap points, swipe-to-dismiss)
+  - RegionSelectOverlay (gesture-handler Pan + reanimated for 60fps selection)
+  - Screenshot capture (react-native-view-shot + expo-image-manipulator crop/resize)
+  - SSE stream client (parseSSEStream adapted for mobile with apiFetch auth)
+  - useAIChat hook (mirrors web: builds ContentBlocks, streams to AI store)
+  - MessageBubble with react-native-markdown-display + long-press copy/share
+  - ScreenshotCarousel (horizontal strip, preview modal, remove button)
+  - ConversationHistory (load/delete saved conversations in bottom sheet)
+  - Mobile conversation store (mirrors web with token provider pattern)
+  - PDFToolbar Sparkles button (mutual exclusion with drawing mode via shared store)
+  - Copy/share via expo-clipboard + RN Share with haptic feedback
 - App: CookedNote | Bundle ID: `com.cookednote.app` | SDK: Expo 52
-- 309 tests passing (179 shared + 130 web) | All 3 workspaces typecheck clean | Build passes
+- 309 tests passing (179 shared + 130 web) | All 3 workspaces typecheck clean
 
 **What's next:**
-- Phase 12: AI Integration Mobile (bottom sheet, screenshot capture, streaming SSE)
-- Still need device testing for Phase 9-11 (iOS Simulator, real iPad with Apple Pencil)
+- Phase 13: Monetization (IAP, paywalls, subscription model)
+- Still need device testing for Phase 9-12 (iOS Simulator, real iPad with Apple Pencil)
 - Still need `prisma db push` when Supabase is reachable (to apply syncVersion/updatedAt columns)
 - Enable Supabase Realtime on Annotation, Document, Folder tables in Supabase dashboard
 - Performance optimization for drawing (<16ms latency target)
@@ -509,3 +510,10 @@ Phase: **Phase 11 complete** (Sync & Cloud) — next up: **Phase 12** (AI Integr
 - 2026-02-13: Web DrawingLayer uses Canvas2D + offscreen canvas for committed strokes + rAF for active stroke
 - 2026-02-13: Mobile DrawingCanvas uses @shopify/react-native-skia + Gesture.Pan() for GPU-accelerated drawing
 - 2026-02-13: Zustand Map selector creates new `[]` ref each render — use `useMemo` to stabilize (same pattern as annotation filter)
+- 2026-02-14: AI bottom sheet uses @gorhom/bottom-sheet v5 with snap points ["25%", "60%", "90%"] for collapsed/reading/typing states
+- 2026-02-14: Mobile region selection: Gesture.Pan + reanimated shared values for 60fps selection rectangle, min 20px threshold
+- 2026-02-14: Screenshot capture: react-native-view-shot captures PDF view, expo-image-manipulator crops to region + downscales
+- 2026-02-14: Mobile SSE streaming reuses web's parseSSEStream pattern (ReadableStream + TextDecoder) with apiFetch for JWT auth
+- 2026-02-14: Mobile conversation store uses token provider pattern: `setConversationTokenProvider(getToken)` initialized in _layout.tsx
+- 2026-02-14: react-native-markdown-display for AI responses; LaTeX skipped for v1 (renders as inline code)
+- 2026-02-14: GestureHandlerRootView wraps document screen for bottom sheet + region selection gesture coordination

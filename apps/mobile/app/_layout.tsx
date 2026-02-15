@@ -6,6 +6,7 @@ import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { colors } from "@/lib/constants";
 import { useSync } from "@/hooks/use-sync";
 import { registerBackgroundSync } from "@/lib/background-sync";
+import { setConversationTokenProvider } from "@/stores/conversation-store";
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -14,19 +15,20 @@ if (!publishableKey) {
 }
 
 function AuthGate() {
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded, getToken } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   // Initialize sync system
   useSync();
 
-  // Register background sync task
+  // Initialize conversation store token provider + register background sync
   useEffect(() => {
     if (isSignedIn) {
+      setConversationTokenProvider(getToken);
       registerBackgroundSync();
     }
-  }, [isSignedIn]);
+  }, [isSignedIn, getToken]);
 
   useEffect(() => {
     if (!isLoaded) return;
