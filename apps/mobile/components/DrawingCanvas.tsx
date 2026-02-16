@@ -1,11 +1,12 @@
-import { useMemo } from "react";
-import { StyleSheet } from "react-native";
+import { useMemo, useState, useCallback } from "react";
+import { StyleSheet, type LayoutChangeEvent } from "react-native";
 import { Canvas, Path, Skia } from "@shopify/react-native-skia";
+import { View } from "react-native";
 import {
   Gesture,
   GestureDetector,
-  GestureHandlerRootView,
 } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
 import { useDrawingStore } from "@cookednote/shared/stores/drawing-store";
 import {
   getStrokeOutlinePoints,
@@ -13,31 +14,25 @@ import {
   getStrokeOpacity,
   getStrokeBlendMode,
 } from "@cookednote/shared/lib/stroke-renderer";
-import { shouldRejectTouch } from "@/lib/palm-rejection";
-
-/** Extract pressure from gesture event (Apple Pencil force on iOS). */
-function extractPressure(event: Record<string, unknown>): number {
-  if ("force" in event && typeof event.force === "number" && event.force > 0) {
-    return event.force;
-  }
-  return 0.5;
-}
 
 interface DrawingCanvasProps {
   pageNumber: number;
-  pageWidth: number;
-  pageHeight: number;
 }
 
-export function DrawingCanvas({
-  pageNumber,
-  pageWidth,
-  pageHeight,
-}: DrawingCanvasProps) {
+export function DrawingCanvas({ pageNumber }: DrawingCanvasProps) {
   const isDrawingMode = useDrawingStore((s) => s.isDrawingMode);
   const allPageStrokes = useDrawingStore((s) => s.pageStrokes);
   const activeStroke = useDrawingStore((s) => s.activeStroke);
   const activePageNumber = useDrawingStore((s) => s.activePageNumber);
+
+  const [canvasSize, setCanvasSize] = useState({ width: 1, height: 1 });
+
+  const onLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    if (width > 0 && height > 0) {
+      setCanvasSize({ width, height });
+    }
+  }, []);
 
   const committedStrokes = useMemo(
     () => allPageStrokes.get(pageNumber) ?? [],
@@ -48,8 +43,8 @@ export function DrawingCanvas({
     activePageNumber === pageNumber && activeStroke !== null;
 
   const dims = useMemo(
-    () => ({ pageWidth, pageHeight }),
-    [pageWidth, pageHeight]
+    () => ({ pageWidth: canvasSize.width, pageHeight: canvasSize.height }),
+    [canvasSize.width, canvasSize.height]
   );
 
   // Build Skia paths for committed strokes
@@ -80,47 +75,69 @@ export function DrawingCanvas({
     };
   }, [showActiveStroke, activeStroke, dims]);
 
+  // JS-thread handlers called from UI-thread gesture callbacks via runOnJS
+  const handleBegin = useCallback(
+    (x: number, y: number, pressure: number) => {
+      useDrawingStore
+        .getState()
+        .beginStroke(pageNumber, { x, y, pressure });
+    },
+    [pageNumber]
+  );
+
+  const handleUpdate = useCallback(
+    (x: number, y: number, pressure: number) => {
+      useDrawingStore.getState().addPoint({ x, y, pressure });
+    },
+    []
+  );
+
+  const handleEnd = useCallback(() => {
+    useDrawingStore.getState().endStroke();
+  }, []);
+
   const panGesture = useMemo(
     () =>
       Gesture.Pan()
         .enabled(isDrawingMode)
         .minDistance(0)
         .onBegin((e) => {
-          if (shouldRejectTouch(e)) return;
-          const x = e.x / pageWidth;
-          const y = e.y / pageHeight;
-          const pressure = extractPressure(e as unknown as Record<string, unknown>);
-          useDrawingStore.getState().beginStroke(pageNumber, { x, y, pressure });
+          if (e.numberOfPointers > 1) return;
+          const x = e.x / canvasSize.width;
+          const y = e.y / canvasSize.height;
+          const force = (e as unknown as Record<string, unknown>).force;
+          const pressure =
+            typeof force === "number" && force > 0 ? force : 0.5;
+          runOnJS(handleBegin)(x, y, pressure);
         })
         .onUpdate((e) => {
-          if (shouldRejectTouch(e)) return;
-          const x = e.x / pageWidth;
-          const y = e.y / pageHeight;
-          const pressure = extractPressure(e as unknown as Record<string, unknown>);
-          useDrawingStore.getState().addPoint({ x, y, pressure });
+          if (e.numberOfPointers > 1) return;
+          const x = e.x / canvasSize.width;
+          const y = e.y / canvasSize.height;
+          const force = (e as unknown as Record<string, unknown>).force;
+          const pressure =
+            typeof force === "number" && force > 0 ? force : 0.5;
+          runOnJS(handleUpdate)(x, y, pressure);
         })
         .onEnd(() => {
-          useDrawingStore.getState().endStroke();
+          runOnJS(handleEnd)();
         })
         .onFinalize(() => {
-          // Fallback: make sure stroke is ended
-          const { activeStroke: stroke } = useDrawingStore.getState();
-          if (stroke) {
-            useDrawingStore.getState().endStroke();
-          }
+          runOnJS(handleEnd)();
         }),
-    [isDrawingMode, pageNumber, pageWidth, pageHeight]
+    [isDrawingMode, canvasSize.width, canvasSize.height, handleBegin, handleUpdate, handleEnd]
   );
 
   if (!isDrawingMode && committedStrokes.length === 0) return null;
 
   return (
-    <GestureHandlerRootView
+    <View
       style={[
+        StyleSheet.absoluteFill,
         styles.overlay,
-        { width: pageWidth, height: pageHeight },
         !isDrawingMode && styles.noPointerEvents,
       ]}
+      onLayout={onLayout}
     >
       <GestureDetector gesture={panGesture}>
         <Canvas style={styles.canvas}>
@@ -145,15 +162,12 @@ export function DrawingCanvas({
           )}
         </Canvas>
       </GestureDetector>
-    </GestureHandlerRootView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
     zIndex: 10,
   },
   canvas: {

@@ -104,6 +104,31 @@ export function DrawingLayer({ pageNumber }: DrawingLayerProps) {
     }
   }, [showActiveStroke, activeStroke]);
 
+  // Initialize canvas size on mount and when drawing mode changes
+  useEffect(() => {
+    syncCanvasSize();
+  }, [syncCanvasSize, isDrawingMode]);
+
+  // Watch for parent size changes (zoom, window resize)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const parent = canvas.parentElement;
+    if (!parent) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      syncCanvasSize();
+      renderOffscreen();
+      renderFrame();
+    });
+
+    resizeObserver.observe(parent);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [syncCanvasSize, renderOffscreen, renderFrame]);
+
   // Re-render offscreen when committed strokes change
   useEffect(() => {
     renderOffscreen();

@@ -20,6 +20,17 @@ import { PDFToolbar } from "@/components/PDFToolbar";
 import { ThumbnailSidebar } from "@/components/ThumbnailSidebar";
 import { DrawingToolbar } from "@/components/DrawingToolbar";
 import { RegionSelectOverlay } from "@/components/RegionSelectOverlay";
+
+// Lazy-load DrawingCanvas — depends on @shopify/react-native-skia which
+// requires a dev build (crashes in Expo Go). Falls back to null gracefully.
+let DrawingCanvas: React.ComponentType<{ pageNumber: number }> | null = null;
+let skiaAvailable = false;
+try {
+  DrawingCanvas = require("@/components/DrawingCanvas").DrawingCanvas;
+  skiaAvailable = true;
+} catch (e) {
+  console.warn("[DrawingCanvas] Failed to load:", e);
+}
 import { AIBottomSheet } from "@/components/AIBottomSheet";
 import { useDrawingSave } from "@/hooks/use-drawing-save";
 import { colors, A4_ASPECT_RATIO } from "@/lib/constants";
@@ -150,13 +161,27 @@ export default function DocumentScreen() {
         onToggleThumbnails={() => setShowThumbnails((v) => !v)}
       />
       <View style={styles.pdfContainer}>
-        <ViewShot ref={pdfViewRef} style={styles.viewShot}>
-          <PDFViewer
-            ref={pdfRef}
-            localPath={localPath}
-            documentId={id}
-          />
-        </ViewShot>
+        <View
+          style={styles.viewShot}
+          pointerEvents={isDrawingMode ? "none" : "auto"}
+        >
+          <ViewShot ref={pdfViewRef} style={styles.viewShot}>
+            <PDFViewer
+              ref={pdfRef}
+              localPath={localPath}
+              documentId={id}
+            />
+          </ViewShot>
+        </View>
+        {DrawingCanvas && <DrawingCanvas pageNumber={currentPage} />}
+        {isDrawingMode && !skiaAvailable && (
+          <View style={styles.skiaWarning}>
+            <Text style={styles.skiaWarningText}>
+              Drawing requires a development build.{"\n"}
+              Run: npx expo run:ios --device
+            </Text>
+          </View>
+        )}
         {isAIMode && !isDrawingMode && (
           <RegionSelectOverlay
             enabled={true}
@@ -205,5 +230,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginTop: 12,
+  },
+  skiaWarning: {
+    position: "absolute",
+    bottom: 16,
+    left: 16,
+    right: 16,
+    backgroundColor: colors.dangerLight,
+    borderRadius: 8,
+    padding: 12,
+    zIndex: 20,
+  },
+  skiaWarningText: {
+    fontSize: 13,
+    color: colors.danger,
+    textAlign: "center",
+    fontWeight: "500",
   },
 });

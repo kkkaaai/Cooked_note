@@ -92,28 +92,28 @@ export function RegionSelectOverlay({
       opacity.value = withTiming(0, { duration: 150 });
     });
 
+  // Use shared values directly (not .value) to avoid reanimated warnings.
+  // Reanimated 3 auto-tracks shared value reads inside useAnimatedStyle.
   const selectionStyle = useAnimatedStyle(() => {
     if (!isActive.value) {
-      return { opacity: 0 };
+      return { opacity: 0, left: 0, top: 0, width: 0, height: 0 };
     }
 
-    const left = Math.min(startX.value, currentX.value);
-    const top = Math.min(startY.value, currentY.value);
-    const width = Math.abs(currentX.value - startX.value);
-    const height = Math.abs(currentY.value - startY.value);
+    const minX = startX.value < currentX.value ? startX.value : currentX.value;
+    const minY = startY.value < currentY.value ? startY.value : currentY.value;
+    const w = startX.value < currentX.value
+      ? currentX.value - startX.value
+      : startX.value - currentX.value;
+    const h = startY.value < currentY.value
+      ? currentY.value - startY.value
+      : startY.value - currentY.value;
 
     return {
       opacity: opacity.value,
-      position: "absolute" as const,
-      left,
-      top,
-      width,
-      height,
-      borderWidth: 2,
-      borderColor: colors.selectionBorder,
-      borderStyle: "dashed" as const,
-      backgroundColor: colors.selectionFill,
-      borderRadius: 4,
+      left: minX,
+      top: minY,
+      width: w,
+      height: h,
     };
   });
 
@@ -122,7 +122,7 @@ export function RegionSelectOverlay({
   return (
     <GestureDetector gesture={pan}>
       <Animated.View style={styles.overlay}>
-        <Animated.View style={selectionStyle} />
+        <Animated.View style={[styles.selection, selectionStyle]} />
       </Animated.View>
     </GestureDetector>
   );
@@ -132,5 +132,13 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 10,
+  },
+  selection: {
+    position: "absolute",
+    borderWidth: 2,
+    borderColor: colors.selectionBorder,
+    borderStyle: "dashed",
+    backgroundColor: colors.selectionFill,
+    borderRadius: 4,
   },
 });
