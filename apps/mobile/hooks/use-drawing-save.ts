@@ -66,7 +66,10 @@ export function useDrawingSave(documentId: string | null) {
             method: "PATCH",
             body: JSON.stringify({ position }),
           });
-          if (!res.ok) throw new Error("PATCH failed");
+          if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(`PATCH ${res.status}: ${text}`);
+          }
         } else {
           const res = await apiFetch("/api/annotations", {
             method: "POST",
@@ -77,7 +80,10 @@ export function useDrawingSave(documentId: string | null) {
               position,
             }),
           });
-          if (!res.ok) throw new Error("POST failed");
+          if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(`POST ${res.status}: ${text}`);
+          }
           const saved: Annotation = await res.json();
           drawingAnnotationIds.current.set(pageNumber, saved.id);
         }

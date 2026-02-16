@@ -412,7 +412,7 @@ goodnotes-clone/
 - Iterate on the review process when needed
 
 ## Current Status
-Phase: **Phase 13 complete** (Monetization) — next up: **Phase 14** (Polish & Launch Prep)
+Phase: **Phase 14 in progress** (Polish & Launch Prep) — real-device testing underway
 
 **What's done:**
 - Phases 1-6: Full web MVP (auth, upload, PDF viewer, highlights, AI, folders, conversations, LaTeX)
@@ -431,16 +431,29 @@ Phase: **Phase 13 complete** (Monetization) — next up: **Phase 14** (Polish & 
   - Web UI: paywall dialog, upgrade banner, subscription badge, settings page
   - Mobile UI: paywall screen (RevenueCat purchase/restore), settings subscription section
   - Security: timing-safe webhook auth, TOCTOU race prevention, UUID validation, env var docs
+- Phase 14 (in progress): Real iPad device testing bug fixes:
+  - Fixed library page infinite re-render jitter (useApiFetch useRef pattern)
+  - Added mobile PDF upload (expo-document-picker + FAB button on library)
+  - Fixed DrawingCanvas not rendering in document screen (was never mounted)
+  - Fixed Skia v2.4.21 → v1.5.0 downgrade for Expo SDK 52 compatibility
+  - Fixed reanimated worklet errors in DrawingCanvas (runOnJS for gesture callbacks)
+  - Fixed gesture conflicts (removed nested GestureHandlerRootView, pointerEvents on PDF)
+  - Added graceful Skia fallback with warning banner for Expo Go
+  - **Fixed drawing latency** — bypassed Zustand store during active drawing, accumulate raw points in useRef, render simple moveTo/lineTo line segments, apply perfect-freehand only on stroke end, throttle re-renders to 60fps via requestAnimationFrame
+  - **Fixed worklet ref snapshot bug** — canvasSizeRef was frozen in worklet closure at {1,1}, moved coordinate normalization from worklet to JS thread
+  - **Fixed Apple Pencil pressure** — clamped force (0–6.67) to 0–1 for Zod validation
+  - **Fixed stroke commit** — replaced fragile beginStroke/endStroke dance with direct pageStrokes commit using refs captured at stroke begin time
+  - **Improved save error logging** — PATCH/POST errors now include HTTP status + response body
 - App: CookedNote | Bundle ID: `com.cookednote.app` | SDK: Expo 52
 - 344 tests passing (199 shared + 145 web) | All 3 workspaces typecheck clean
 
 **What's next:**
-- Phase 14: Polish & Launch Prep (testing, bug fixes, performance, screenshots, beta)
-- Still need device testing for Phase 9-13 (iOS Simulator, real iPad with Apple Pencil)
+- Continue Phase 14: Verify drawing latency improvement on real iPad, test stroke persistence across sessions
+- Mobile highlight tool not yet implemented (no HighlightLayer on mobile)
 - Still need `prisma db push` when Supabase is reachable (to apply Subscription/UsageRecord + syncVersion columns)
 - Enable Supabase Realtime on Annotation, Document, Folder tables in Supabase dashboard
 - Test Stripe checkout + RevenueCat sandbox purchase flows
-- Performance optimization for drawing (<16ms latency target)
+- Test with large PDFs (100+ pages, 50MB+)
 
 **Open questions:**
 1. Target launch date?
@@ -533,3 +546,10 @@ Phase: **Phase 13 complete** (Monetization) — next up: **Phase 14** (Polish & 
 - 2026-02-15: RevenueCat webhook auth uses `crypto.timingSafeEqual` + UUID regex validation on `app_user_id`
 - 2026-02-15: Subscription store uses adapter injection pattern (same as sync-store) for platform-specific fetch
 - 2026-02-15: Free tier: 3 docs + 10 AI requests/month; Pro: $7.99/mo or $49.99/yr, unlimited
+- 2026-02-16: `useApiFetch` infinite re-render fix — `useAuth().getToken` is unstable (new ref each render). Store in `useRef` so `useCallback` has stable identity with `[]` deps
+- 2026-02-16: Mobile PDF upload uses `expo-document-picker` + FormData with `{ uri, type, name }` object (cast as `unknown as Blob`). Don't set Content-Type header — let RN set multipart boundary
+- 2026-02-16: `@shopify/react-native-skia` v2.x requires React 19 + RN 0.78; Expo SDK 52 (React 18.3 + RN 0.76.9) needs v1.5.0. Use `npx expo install` to auto-select compatible version
+- 2026-02-16: DrawingCanvas lazy-loaded with `try { require() } catch` at module level for Expo Go graceful fallback (Skia native module unavailable without dev build)
+- 2026-02-16: RNGH v2+ gesture callbacks (`.onBegin`, `.onUpdate`, `.onEnd`) run on reanimated UI thread (worklets). Call JS-thread functions via `runOnJS()` — Zustand `getState()`, custom helpers, etc.
+- 2026-02-16: Nested `GestureHandlerRootView` causes gesture conflicts — only one GHRV per screen. DrawingCanvas uses plain `View` since document screen already has GHRV
+- 2026-02-16: `pointerEvents="none"` on PDF wrapper when drawing mode active — prevents `react-native-pdf` UIScrollView from stealing touch events from overlaid DrawingCanvas
